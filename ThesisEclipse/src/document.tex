@@ -1,0 +1,303 @@
+\documentclass{article}
+\usepackage{textcomp}
+\begin{document}
+
+\section{Introduction}
+
+Blurb about secret sharing.
+
+Blurb about game theory and rationality.
+
+\section{Results}
+
+New fancy algorithm in the syncrhonous domain.
+
+Exploring the asynchronous domain.
+
+\section{Rational Secret Sharing}
+\subsection{Secret Sharing}
+Dividing a secret into parts, such that some minimum number of parts are needed to reconstruct the original secrent.
+
+\subsection{Rational Secret Sharing}
+The secret shares have been given to rational players who prefer to know the secret, then prefer to minimize the number of other players who know the secret.
+
+The protocol has to work in the present or rational players.
+
+If the protocol has a fixed number of rounds, a rational player will defect on the last round because that is a dominant strategy.
+		
+Thus the number of rounds must be unknown to the players. Ideally each round should have the maximum possible chance of being the last round without incentivizing players to defect.
+
+\subsection{Goals}
+\begin{itemize}
+	\item Minimize the impact of coalitions (of up to m-1 players, since larger coalitions can independently derive the secret).
+	\item Maximize the number of participants that learn the secret.
+	\item Prevent denial of service.
+	\item Prevent defection.
+\end{itemize}
+
+\section{Importance}
+tod This seems like a practical problem. Any scenario with shares distributed to parties that don't trust each other.
+
+Suppose a will is encrypted with a key distributed to the various heirs. If the will can't be decrypted the fortune is distributed evenly. If a player can prevent others from seeing the will conditionally on that player getting less than a uniform share, they have an incentive to learn first then conditionally DOS.
+
+Suppose a valuable database is protected by a key distributed amonst various players. The value of information may be higher if it is known to a single party, so they have an incentive to prevent others from learning the secret.
+
+\section{Random Thought Streams to be Merged}
+It seems like we're extending the cryptographic primitive Oblivious Transfer. In particular, we want to correlate a set of N oblivious transfers so that either at least M of them transmit or none of them transmit. Furthermore, it should work even if N-M are chaotic and M-1 are colluding. Look up more information on oblivious transfer and see if those implementations can be extended.
+
+\section{Common Assumptions In Previous Work}
+\subsection{Cryptographic Primitives}
+\subsection{Synchronous Broadcast}
+Existing algorithms (check!) all depend on synchronous broadcast. In other words, they assume players can communicate such that:
+\begin{itemize}
+\item Obliviousness.
+
+	No player can receive a round's messages before sending their own round message. This prevents waiting to receive all messages and confirming it is not the last round before sending your own message, resulting in a deadlock due to all players waiting on each other.
+
+\item Reliability.
+
+	Messages are never mangled or lost. Receiving a message is equivalent to a player sending that message. This prevents confusing non-participating players with unlucky players.
+
+\item Cross-consistency.
+
+	Players can't send differing messages to different players (at least on the broadcast channel). This prevents byzantine complications in some protocols. (How often is this relied upon? Is it necessary?)
+\end{itemize}
+
+I will cover some methods of removing syncrhonous broadcast assumptions.
+
+\section{Previous Work}
+\subsection{Rational secret sharing and multiparty computation: extended abstract}
+Proves there is no finite bound on the number of rounds by deleting weakly dominated strategies.
+
+Introduces a 3 of 3 protocol with finite expected number of rounds.
+
+Extends to an m of n protocol (n > 2, n >= m).
+
+The protocol has the issuer giving out new shares of the secret each round. Requiring the presence of the issuer defeats the purpose of secret sharing, because the shares become unnecessary. Just have the issuer give out the secret when enough players indicate they want the secret revealed.
+
+Assumptions about utility functions.
+
+Uses synchronous broadcast.
+
+\subsection{Collusion Free Protocol for Rational Secret Sharing}
+
+Uses synchronous broadcast.
+
+\subsection{Games for Exchanging Information}
+
+Short list long list. Short player knows definitive round, long player has value but doesn't know which. O(t) information shared!
+
+\subsection{Fairness with an Honest Minority and a Rational Majority}
+
+\subsection{Rational Secret Sharing with Repeated Games}
+Poor quality paper.
+Covers asynchronous case.
+But assumes the dealer is present for all rounds, allowing ack optimization.
+
+\subsection{The deterministic protocol for rational secret sharing}
+
+\subsection{How to Share a Secret}
+Shamir's (and who?) secret sharing protocol uses polynomials over finite fields. For a secret requiring M shares to reveal, the sharer generates a random M-1 degree polynomial with the secret stored in the y value at x=0. The ith share is the value of the polynomial at x=i. Polynomial interpolation of an (M-1)th degree polynomial requires M points, and fewer points allow any value at 0 (clearer...).
+
+This scheme has several benefits:
+\begin{itemize}
+	\item Secure. Given m-1 shares, every y value at x=0 is equally likely. (Why?)
+	\item Extensible. New shares can be introduced without modifying or weakening the old shares. Players don't even need to know how many shares there are in total or who has what shares.
+	\item Compact. Optimal amount of information per share. Each player gets an amount of information equal to the information required to store the secret. (This is optimal because if a share had less information than the secret, m-1 shares would be able to know something about the secret based on fewer possible remaining shares than secrets.)
+	\item and...?
+\end{itemize}
+
+\subsection{paper using homomorphic encryption to emulate ack-ing\ldots}
+Emulating a trusted intermediary with homomorphic encryption. Works for 2 players.
+
+Very expensive. Implementation details very complicated? Relies on multi party computation (is secret sharing supposed to enable more efficient multi party computation?).
+
+\section{Types of Players and Coalitions}
+
+\begin{itemize}
+  \item Honest
+  \subitem Tries to follow the protocol exactly.
+  \subitem Doesn't participate in coalitions.
+  \subitem M of N with H honest players is equivalent to (M-H) of (N-H) with 0 honest players.
+  \item Irrational
+  \subitem Wants to prevent others from learning the secret. Doesn't care if they themselves learn the secret.
+  \subitem Irrational coalitions don't care if their members learn the secret.
+  \item Rational
+  \subitem Wants to learn the secret above all else and, secondarily, wants to prevent others from learning it.
+  \subitem Rational coalitions of size C are similar to a rational player with C puppets.
+  \subitem Rational coalitions of size M or more are equivalent to irrational coalitions. 
+\end{itemize}
+
+\begin{itemize}
+  \item Assume irrational coalitions don't attempt to deny their own members access to the secret, in order to allow them to be strong. 
+  \item Mixed rational/irrational coalitions are not equivalent to pure rational or pure irrational coalitions.
+  \item If irrational opponents can prove to others when the last round occurs, before it does, the rational players will not participate.
+  \item Irrational coalitions with at least M members know when the last round occurs.
+  \item Irrational coalitions have two strategies against our algorithm: target m-1 or target m-2. Targeting m-1 requires fewer sacrifices but is not cooperative with other irrationals and only prevents m-1 non-irrationals from learning the secret. Targeting m-2 is cooperative with other irrationals but only works if there are n-m+1 irrationals.
+  \item Rational coalitions have the omit-last-send-when-you-can strategy.
+  \item 
+\end{itemize}
+Opponents are organized into coalitions, which freely share information amonst themselves in order to further their goals. Simple results:
+
+What about coalitions of half rational half irrational players? Do they always categorize as rational or irrational? NO: The rationals won't sacrifice themselves for the good of the coalition, because they will then be excluded.
+
+- If it is possible to prove when the last round occurs without revealing the secret, the irrational opponents can do so in order to cause the rational opponents to stop playing.
+- If an irrational coalition has more than m members, they know when the last round occurs.
+- If the irrational opponents know there are fewer than n-m non-irrational players, they will all stop playing so the secret will not be learned.
+- m rational or honest players will learn the secret if there is synchronous broadcast.
+- m honest players will learn the secret if messages are verifiable.
+- coalitions are significantly less powerful if they don't have the n-m majority. Not clear how multiple coalitions affect the result.
+
+\section{Emulating Simultaneous Broadcast}
+
+We can emulate simultaneous broadcast with some losses. Strategies:
+
+\subsection{Use finite sync broad}
+If we have m sync, choose m at random each round to send. Everyone playing learns the secret. Defeats rational coalitions. Irrational coalitions can sacrifice two members per round to strengthen. How much stronger are they??
+
+If we have m-1 sync, choose m-1 at random each round to send. Everyone except last round senders learn the secret. Defeats rational coalitions. Irrational coalitions. Irrational coalitions only have to sacrifice one member per round they are chosen. Again, how much stronger?
+Other m-1 strategy: send 1 then m-1. Rational coalitions with c=m-1 a 1 - c/n chance of winning. Irrational coalitions have to sacrifice two per round.
+
+If we have m-2 sync: send 1 then m-2. Rational coalitions with c=m-1 have a 1 - c/n chance of winning. Irrational coalitions have to sacrifice 1 per round.
+Alt: send 2 then m-2. Rational coalitions with c = m-1 have a 1 - (c choose 2)/(n choose 2) chance of winning. Irrationals sacrifice 2 per round.
+
+Targeting m-1 allows single irrational sacrifices but costs the senders learning the secret and an increased viability for rational coalitions.
+Targeting m requires double irrational sacrifices, unless k=1,  
+
+\subsection{Elect a Synchronizer}
+\begin{itemize}
+	\item Choose a player at random to be the 'synchronizer'.
+	\item That player generates a key pair and broadcasts the public key.
+	\item The remaining players perform a key exchange.
+	\item Remaining players send all of their messages using exchanged key, but public-encrypted with syncer's public key.
+	\item Syncer reveals their private key after all messages have been exchanged.
+	\item Works as long as Syncer doesn't collaberate with others. (Is that justifiable? Will a rational syncer will convince a rational player to form a 2-person alliance on the spot?)
+	\item What about using an m-1 shared secret for the sync key?
+	\item Not stable. The synchronizer will select a random other player to be in on the secret. Need m-1 synchronizers.
+\end{itemize}
+
+\section{Optimal Algorithm for Synchronous Broadcast}
+\subsection{Dealer Protocol}
+\begin{itemize}
+	\item Generate a commitment to the secret and a nonce
+	\item Generate a public/private key pair for each player
+	\item Pick a poisson-distributed round to be the final round
+	\item Compute secret shares based on any secret sharing scheme (e.g. shamir)
+	\item Compute a masked share for each player 
+	\subitem The true share will be revealed on the target round
+	\subitem maskedShare = PrivateEncrypt(round + nonce) xor actualShare
+	\item Send each player their private key
+	\item Broadcast to every player the nonce, commitment, all masked shares, and all public keys
+\end{itemize}
+\subsection{Player Protocol}
+\begin{itemize}
+	\item Broadcast this round's potential share to all players
+	\subitem potentialShare = PrivateEncrypt(round + nonce)
+	\item Verify potential shares received from all players
+	\subitem PublicDecrypt(received) == round + nonce
+	\subitem Exclude players from future rounds if they send nothing or send invalid potential shares
+	\item Unmask the potential shares to compute the potential secret
+	\subitem unmaskedShare(p) = receivedValue(p) xor maskedShare(p)
+	\subitem potentialSecret = combine(unmaskedShares)
+	\item Start next round if the potential secret doesn't match the commitment
+	\item Otherwise the secret has been learned
+\end{itemize}
+
+\subsection{Properties}
+\begin{itemize}
+	\item Players can't know if a round is the last round before sending their share for that round.
+	\subitem Sends are synchronized and other shares must be received in order to create the potential secret in order to compare against the commitment.
+	\item Perfect resilience against coalitions up to m-1 players, the best possible.
+	\item Works for 2 of 2 (n>=m, m>=2).
+	\item O(N) shared values, O(N) private values
+	\item O(N) cost per round with verification (O(M) if verification skipped)
+	\item Cost per round has a much smaller constant than using homomorphic encryption.
+	\item Optimal resilience against chaotic players. As long as m players follow the protocol, the secret is learned.
+\end{itemize}
+
+\subsection{Correctness}
+
+If a player defects before the last round, they do not learn the secret.
+
+If a player defects on the last round, others may be prevented from learning the secret.
+
+A player can't determine if a round is the final round before deciding to defect. They need other players' round shares to determine if it's the last round.
+
+A rational player will not defect, because they prefer to learn the secret and won't chance defecting on the incorrect round.
+
+\section{Asynchronous Broadcast}
+
+All papers relied on synchronous broadcast. I now prove that asynchronous broadcast is strictly weaker.
+
+Suppose we have no mechanism, such as known delays, to force packets to overlap. Then rational players will wait to receive as many messages as possible before sending, because this is a weakly dominant strategy. The result is deadlock. To avoid this problem, we must force the order of transmission.
+
+Bounded synchronous broadcast.
+
+\subsection{Result: if all players are non-colluding rational, at least one will not learn the secret.}
+\begin{itemize}
+  \item Assume there exists a first round R where all players know the secret, $R >= M-1$
+  \item Let $S$ be the sender of round R's message
+  \item $S$ knows the secret in round R
+  \item $S$ learned no new information during round R
+  \item $S$ knew the secret in round R-1
+  \item $S$ knows more players may learn the secret due to sending round R's message
+  \item $S$ rationally prefers fewer players to learn the secret 
+  \item $S$ will not send a message in round R
+  \item Contradiction
+  \item There is no first round where all players learn the secret
+  \item There is no round where all players learn the secret
+\end{itemize}
+
+There is a protocol that achieves that lower bound: same as above, except the player order is defined and the definitive round is smeared one message further for each player. The first to learn has their shares hidden higher up Players learn the secret m-1 turns after their send in the 'definitive' round, and
+
+\subsection{Result: For any strategy, rational coalitions sometimes learn the secret earlier.}
+\begin{itemize}
+\item Let $R$ be the first round where any player learns the secret without collusion, $R >= M-1$
+\item Let $C$ be the set of players in the rational coalition, $1 < |C| < M$
+\item Let $L$ be the set of players who learn the secret in round $R$, $L \not = \emptyset$.
+\item Let $S$ be the sender of round R's message
+\item $S \not \in L$ (S learned no new information during round R)
+\item $R >= |C|$
+\item If $L \cap S \not = \emptyset and S \in C$ then in round R-1 the coalition knows the information necessary to reconstruct the secret.
+\item $P(S \in C) = \frac{|C|}{N}$
+\item If $|L| = 1$ then $P(L \cap S \not = \emptyset | S \in C) = \frac{|C|-1}{N}$
+\item If $|L| = 1$ then $P(L \cap S \not = \emptyset and S \in C) = \frac{|C|*(|C|-1)}{N*(N-1)}$
+\item $P(L \cap S \not = \emptyset and S \in C) >= \frac{|C|*(|C|-1)}{N*(N-1)}$
+\item Therefore there is at least a $\frac{|C|*(|C|-1)}{N*(N-1)}$ chance colluders will learn the secret at least one round early.
+\item If $N - C < M$ then also others will not learn the secret with that probability, since the coalition will stop participating. 
+\end{itemize}
+
+\section{Partially synchronous broadcast}
+
+Suppose you can cause $H$  messages to overlap. $H = N$ is synchronous, $H = 1$ is asynchronous, $H \in [2, N)$ is partially synchronous.
+
+\subsection{Algorithm}
+The important send is the one that potentially crosses either the M-1 or M shared message boundary. If there are fewer than shared M-1 then no one knows the secret. If there are M-1 shared messages then all players except M-1 learn the secret and rational players will not continue the round to M when it matters. If there are M shared messages or more then all players know the secret.
+
+We want to pick a value to target for crossing the threshold. It can be anywhere from $[M-H-1]$ to $M - 2$. Lower values increase the risk that irrational coalitions will cause the undesirable $M-1$ case, with $M-H-1$ guaranteeing it and $M-2$ requiring all but one to defect. On the other hand, higher values increase the risk of a rational coalition pre-emptively learning the secret, with $M-2$ being vulnerable to even coalitions of size 2 and $M-H-1$ having the best resistance.
+
+The best choice will depend on the likelihood of each type of coalition. If you expect rational coalitions, go low. If you expect irrational colations, go high.
+
+Note that irrational coalitions can follow two strategies: target $M-1$ or all drop. The all drop strategy is implicitely cooperative with other irrational coalitions, while the $M-1$ strategy may cause multiple coalitions to pile on and undershoot the target at the cost of too many sacrifices.
+
+\subsection{Racing}
+In the next round, favor players who sent first in this round.
+
+\subsection{Force an Order}
+\begin{itemize}
+	\item Generate a random order for all the players each round.
+	\item Players send their round messages in that order.
+	\item m-1 of n players will not learn the secret.
+	\item Collusions can result in only the collusion learning the secret. The larger they are the worse the problem.
+\end{itemize}
+
+\subsection{Use Known Delays}
+\begin{itemize}
+	\item Assume transmission delays are known and constant, or at least constant enough that maxdelay-mindelay < waitforreceive.
+	\item Receiver can determine if sender waited to receive before sending or not.
+	\item Consider waiting for receive as bad as not sending.
+\end{itemize}
+
+\section{limitations}
+\section{future work}
+\end{document}
