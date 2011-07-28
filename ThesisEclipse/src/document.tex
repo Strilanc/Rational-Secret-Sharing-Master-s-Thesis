@@ -225,7 +225,7 @@ A player can't determine if a round is the final round before deciding to defect
 
 A rational player will not defect, because they prefer to learn the secret and won't chance defecting on the incorrect round.
 
-\section{Asynchronous Broadcast}
+\section{Weakening Syncrhonous Broadcast}
 
 All papers relied on synchronous broadcast. I now prove that asynchronous broadcast is strictly weaker.
 
@@ -282,21 +282,6 @@ Note that irrational coalitions can follow two strategies: target $M-1$ or all d
 
 \subsection{Racing}
 In the next round, favor players who sent first in this round.
-
-\subsection{Force an Order}
-\begin{itemize}
-	\item Generate a random order for all the players each round.
-	\item Players send their round messages in that order.
-	\item m-1 of n players will not learn the secret.
-	\item Collusions can result in only the collusion learning the secret. The larger they are the worse the problem.
-\end{itemize}
-
-\subsection{Use Known Delays}
-\begin{itemize}
-	\item Assume transmission delays are known and constant, or at least constant enough that maxdelay-mindelay < waitforreceive.
-	\item Receiver can determine if sender waited to receive before sending or not.
-	\item Consider waiting for receive as bad as not sending.
-\end{itemize}
 
 \section{limitations}
 \section{future work}
