@@ -225,51 +225,58 @@ A player can't determine if a round is the final round before deciding to defect
 
 A rational player will not defect, because they prefer to learn the secret and won't chance defecting on the incorrect round.
 
-\section{Weakening Syncrhonous Broadcast}
+\section{Non-Synchronous Broadcast}
 
-All papers relied on synchronous broadcast. I now prove that asynchronous broadcast is strictly weaker.
+All previous papers have relied upon the assumption of synchronous broadcast. Essentially, the ability to guarantee multiple players send messages before receiving messages sent by other players. This assumption is not very practical.
 
-Suppose we have no mechanism, such as known delays, to force packets to overlap. Then rational players will wait to receive as many messages as possible before sending, because this is a weakly dominant strategy. The result is deadlock. To avoid this problem, we must force the order of transmission.
+Losing the synchronous broadcast assumption has costs. Fewer players will learn the secret, and coalitions become more powerful. Examples with proof below.
 
-Bounded synchronous broadcast.
-
-\subsection{Result: if all players are non-colluding rational, at least one will not learn the secret.}
+\subsection{If all players are rational then at least one will not learn the secret}
 \begin{itemize}
+  \item Let all players be rational
   \item Assume there exists a first round R where all players know the secret, $R >= M-1$
-  \item Let $S$ be the sender of round R's message
-  \item $S$ knows the secret in round R
-  \item $S$ learned no new information during round R
-  \item $S$ knew the secret in round R-1
-  \item $S$ knows more players may learn the secret due to sending round R's message
-  \item $S$ rationally prefers fewer players to learn the secret 
-  \item $S$ will not send a message in round R
-  \item Contradiction
+  \subitem Let $S$ be the sender of round R's message
+  \subitem $S$ knows the secret in round R
+  \subsubitem By definition of R
+  \subitem $S$ learned no new information during round R
+  \subsubitem $S$ only sent information
+  \subitem $S$ knew the secret in round R-1
+  \subsubitem $S$ had the same information then
+  \subitem $S$ rationally prefers fewer players to learn the secret 
+  \subsubitem By definition
+  \subitem For $S$, not sending the message weakly dominates sending the message
+  \subsubitem $S$ knows the secret either way
+  \subsubitem $S$ knows sending messages may reveal the secret to more players
+  \subitem $S$ will not send a message in round R
+  \subitem $S$ sent a message in round R
+  \subitem Contradiction
   \item There is no first round where all players learn the secret
-  \item There is no round where all players learn the secret
+  \subitem By contradiction
+  \item At least one player doesn't learn the secret
 \end{itemize}
 
-There is a protocol that achieves that lower bound: same as above, except the player order is defined and the definitive round is smeared one message further for each player. The first to learn has their shares hidden higher up Players learn the secret m-1 turns after their send in the 'definitive' round, and
+Note that we can achieve exactly one player not learning the secret in the absence of coalitions, meaning the bound is tight. The algorithm will be explored later.
 
-\subsection{Result: For any strategy, rational coalitions sometimes learn the secret earlier.}
+\subsection{Coalitions have a chance of learning the secret earlier}
 \begin{itemize}
-\item Let $R$ be the first round where any player learns the secret without collusion, $R >= M-1$
-\item Let $C$ be the set of players in the rational coalition, $1 < |C| < M$
-\item Let $L$ be the set of players who learn the secret in round $R$, $L \not = \emptyset$.
-\item Let $S$ be the sender of round R's message
-\item $S \not \in L$ (S learned no new information during round R)
-\item $R >= |C|$
-\item If $L \cap S \not = \emptyset and S \in C$ then in round R-1 the coalition knows the information necessary to reconstruct the secret.
-\item $P(S \in C) = \frac{|C|}{N}$
-\item If $|L| = 1$ then $P(L \cap S \not = \emptyset | S \in C) = \frac{|C|-1}{N}$
-\item If $|L| = 1$ then $P(L \cap S \not = \emptyset and S \in C) = \frac{|C|*(|C|-1)}{N*(N-1)}$
-\item $P(L \cap S \not = \emptyset and S \in C) >= \frac{|C|*(|C|-1)}{N*(N-1)}$
-\item Therefore there is at least a $\frac{|C|*(|C|-1)}{N*(N-1)}$ chance colluders will learn the secret at least one round early.
-\item If $N - C < M$ then also others will not learn the secret with that probability, since the coalition will stop participating. 
+  \item Let $R$ be the first round where any player learns the secret legitimately (assuming no collusion), $R >= M-1$
+  \item Let $C$ be a set of players in a rational coalition, $1 < |C| < M$
+  \item Let $L$ be the set of players who learn the secret in round $R$, $L \not = \emptyset$.
+  \item Let $S$ be the sender of round R's message
+  \item $S \not \in L$
+    \subitem S learned no new information during round R
+  \item $R >= |C|$
+    \subitem By $R >= M-1$, $|C| < M$
+  \item If $L \cap S \not = \emptyset and S \in C$ then in round R-1 the coalition knows the information necessary to reconstruct the secret.
+  \item $P(L \cap S \not = \emptyset and S \in C) >= \frac{|C|*(|C|-1)}{N*(N-1)}$
+  	\subitem $P(S \in C) = \frac{|C|}{N}$
+    \subitem If $|L| = 1$ then $P(L \cap S \not = \emptyset | S \in C) = \frac{|C|-1}{N}$
+    \subitem If $|L| = 1$ then $P(L \cap S \not = \emptyset and S \in C) = \frac{|C|*(|C|-1)}{N*(N-1)}$
+  \item Therefore there is at least a $\frac{|C|*(|C|-1)}{N*(N-1)}$ chance colluders will learn the secret at least one round early.
+  \item If $N - C < M$ then also others will not learn the secret with that probability, since the coalition will stop participating. 
 \end{itemize}
 
-\section{Partially synchronous broadcast}
-
-Suppose you can cause $H$  messages to overlap. $H = N$ is synchronous, $H = 1$ is asynchronous, $H \in [2, N)$ is partially synchronous.
+It would require predictable delays that aren't realistic on the internet. This brings up the obvious question: how essential is synchronous broadcast? a message before receiving Suppose you can cause $H$ messages to overlap. $H = N$ is synchronous, $H = 1$ is asynchronous, $H \in [2, N)$ is partially synchronous.
 
 \subsection{Algorithm}
 The important send is the one that potentially crosses either the M-1 or M shared message boundary. If there are fewer than shared M-1 then no one knows the secret. If there are M-1 shared messages then all players except M-1 learn the secret and rational players will not continue the round to M when it matters. If there are M shared messages or more then all players know the secret.
@@ -279,6 +286,12 @@ We want to pick a value to target for crossing the threshold. It can be anywhere
 The best choice will depend on the likelihood of each type of coalition. If you expect rational coalitions, go low. If you expect irrational colations, go high.
 
 Note that irrational coalitions can follow two strategies: target $M-1$ or all drop. The all drop strategy is implicitely cooperative with other irrational coalitions, while the $M-1$ strategy may cause multiple coalitions to pile on and undershoot the target at the cost of too many sacrifices.
+
+All papers relied on synchronous broadcast. I now prove that asynchronous broadcast is strictly weaker.
+
+Suppose we have no mechanism, such as known delays, to force packets to overlap. Then rational players will wait to receive as many messages as possible before sending, because this is a weakly dominant strategy. The result is deadlock. To avoid this problem, we must force the order of transmission.
+
+Bounded synchronous broadcast.
 
 \subsection{Racing}
 In the next round, favor players who sent first in this round.
