@@ -42,9 +42,6 @@ Suppose a will is encrypted with a key distributed to the various heirs. If the 
 
 Suppose a valuable database is protected by a key distributed amonst various players. The value of information may be higher if it is known to a single party, so they have an incentive to prevent others from learning the secret.
 
-\section{Random Thought Streams to be Merged}
-It seems like we're extending the cryptographic primitive Oblivious Transfer. In particular, we want to correlate a set of N oblivious transfers so that either at least M of them transmit or none of them transmit. Furthermore, it should work even if N-M are chaotic and M-1 are colluding. Look up more information on oblivious transfer and see if those implementations can be extended.
-
 \section{Common Assumptions In Previous Work}
 \subsection{Cryptographic Primitives}
 \subsection{Synchronous Broadcast}
@@ -164,18 +161,6 @@ Alt: send 2 then m-2. Rational coalitions with c = m-1 have a 1 - (c choose 2)/(
 Targeting m-1 allows single irrational sacrifices but costs the senders learning the secret and an increased viability for rational coalitions.
 Targeting m requires double irrational sacrifices, unless k=1,  
 
-\subsection{Elect a Synchronizer}
-\begin{itemize}
-	\item Choose a player at random to be the 'synchronizer'.
-	\item That player generates a key pair and broadcasts the public key.
-	\item The remaining players perform a key exchange.
-	\item Remaining players send all of their messages using exchanged key, but public-encrypted with syncer's public key.
-	\item Syncer reveals their private key after all messages have been exchanged.
-	\item Works as long as Syncer doesn't collaberate with others. (Is that justifiable? Will a rational syncer will convince a rational player to form a 2-person alliance on the spot?)
-	\item What about using an m-1 shared secret for the sync key?
-	\item Not stable. The synchronizer will select a random other player to be in on the secret. Need m-1 synchronizers.
-\end{itemize}
-
 \section{Optimal Algorithm for Synchronous Broadcast}
 \subsection{Dealer Protocol}
 \begin{itemize}
@@ -276,25 +261,9 @@ Note that we can achieve exactly one player not learning the secret in the absen
   \item If $N - C < M$ then also others will not learn the secret with that probability, since the coalition will stop participating. 
 \end{itemize}
 
-It would require predictable delays that aren't realistic on the internet. This brings up the obvious question: how essential is synchronous broadcast? a message before receiving Suppose you can cause $H$ messages to overlap. $H = N$ is synchronous, $H = 1$ is asynchronous, $H \in [2, N)$ is partially synchronous.
+
 
 \subsection{Algorithm}
-The important send is the one that potentially crosses either the M-1 or M shared message boundary. If there are fewer than shared M-1 then no one knows the secret. If there are M-1 shared messages then all players except M-1 learn the secret and rational players will not continue the round to M when it matters. If there are M shared messages or more then all players know the secret.
-
-We want to pick a value to target for crossing the threshold. It can be anywhere from $[M-H-1]$ to $M - 2$. Lower values increase the risk that irrational coalitions will cause the undesirable $M-1$ case, with $M-H-1$ guaranteeing it and $M-2$ requiring all but one to defect. On the other hand, higher values increase the risk of a rational coalition pre-emptively learning the secret, with $M-2$ being vulnerable to even coalitions of size 2 and $M-H-1$ having the best resistance.
-
-The best choice will depend on the likelihood of each type of coalition. If you expect rational coalitions, go low. If you expect irrational colations, go high.
-
-Note that irrational coalitions can follow two strategies: target $M-1$ or all drop. The all drop strategy is implicitely cooperative with other irrational coalitions, while the $M-1$ strategy may cause multiple coalitions to pile on and undershoot the target at the cost of too many sacrifices.
-
-All papers relied on synchronous broadcast. I now prove that asynchronous broadcast is strictly weaker.
-
-Suppose we have no mechanism, such as known delays, to force packets to overlap. Then rational players will wait to receive as many messages as possible before sending, because this is a weakly dominant strategy. The result is deadlock. To avoid this problem, we must force the order of transmission.
-
-Bounded synchronous broadcast.
-
-\subsection{Racing}
-In the next round, favor players who sent first in this round.
 
 \section{limitations}
 \section{future work}
