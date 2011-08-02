@@ -265,6 +265,64 @@ Note that we can achieve exactly one player not learning the secret in the absen
 
 \subsection{Algorithm}
 
+Differences from synchronous algorithm:
+
+Rounds have H senders instead of all at once. Players will learn the secret H at a time, the round after they send. This is made possible by giving each player a different set of shares to reveal (i.e. they get different masks to apply), and making the masks apply on different rounds.
+
+GRAPHIC
+
+$H = 1$
+
+$M = 3$
+
+$N = 5$
+
+Receivers
+
+  Sender
+
+. 1 2 3 4 5 1 2
+  
+2 + + + + + . x 5/5 pass
+
+3 . + + + + + x 5/5 pass
+
+4 . . + + + + x 4/5 pass
+
+5 . . . + + + x 3/5 pass
+
+1 . . . . + + x 2/5 fail
+
+
+
+$H = 2$
+
+$M = 3$
+
+$N = 5$
+
+Receivers
+
+  Sender
+
+. 61 23 45 61 23
+  
+2 .+ ++ ++ .. xx 5/5 pass
+
+3 .+ ++ ++ .. xx 5/5 pass
+
+4 .. .+ ++ ++ xx 5/5 pass
+
+5 .. .+ ++ ++ xx 5/5 pass
+
+6 .. .. .+ ++ xx 3/5 pass
+
+1 .. .. .+ ++ xx 3/5 pass
+
+\subsection{Analysis}
+
+
+
 \section{limitations}
 \section{future work}
 \end{document}
