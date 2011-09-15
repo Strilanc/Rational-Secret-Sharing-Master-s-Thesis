@@ -67,6 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ModIntPolynomial.cs" />
     <Compile Include="ModInt.cs" />
     <Compile Include="ShamirSecretSharing.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

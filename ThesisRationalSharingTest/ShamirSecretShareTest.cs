@@ -22,19 +22,19 @@ namespace ThesisRationalSharingTest {
             var s2 = new ShamirSecretShare(b + 2, b + 3);
             var s3 = new ShamirSecretShare(b + 3, b + 5);
             var s4 = new ShamirSecretShare(b + 4, b + 7);
-            var s5 = ShamirSecretShare.Interpolate(new[] { s1, s2, s3, s4 }, b + 5);
-            var s6 = ShamirSecretShare.Interpolate(new[] { s1, s2, s3, s4 }, b + 6);
+            var s5 = ShamirSecretShare.FromPoly(ShamirSecretShare.InterpolatePoly(new[] { s1, s2, s3, s4 }), 5);
+            var s6 = ShamirSecretShare.FromPoly(ShamirSecretShare.InterpolatePoly(new[] { s1, s2, s3, s4 }), 6);
 
             // constant
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s1 }, b + 0).Y == s1.Y);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s1 }, b + 95).Y == s1.Y);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s2 }, b + 0).Y == s2.Y);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s2 }, b + -1).Y == s2.Y);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s1 }).EvaluateAt(0) == s1.Y);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s1 }).EvaluateAt(95) == s1.Y);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s2 }).EvaluateAt(0) == s2.Y);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s2 }).EvaluateAt(-1) == s2.Y);
 
             // line
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s1, s2 }, b + 0).Y == 1);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s1, s2 }, b + -1).Y == 0);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s1, s2 }, b + 6).Y == 7);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s1, s2 }).EvaluateAt(0) == 1);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s1, s2 }).EvaluateAt(-1) == 0);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s1, s2 }).EvaluateAt(6) == 7);
         }
 
         [TestMethod()]
@@ -45,12 +45,12 @@ namespace ThesisRationalSharingTest {
             var s2 = new ShamirSecretShare(b + 2, b + 3);
             var s3 = new ShamirSecretShare(b + 3, b + 5);
             var s4 = new ShamirSecretShare(b + 4, b + 7);
-            var s5 = ShamirSecretShare.Interpolate(new[] { s1, s2, s3, s4 }, b + 5);
-            var s6 = ShamirSecretShare.Interpolate(new[] { s1, s2, s3, s4 }, b + 6);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s2, s3, s4, s5 }, b + 1).Y == s1.Y);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s2, s3, s4, s6 }, b + 1).Y == s1.Y);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s6, s3, s4, s5 }, b + 2).Y == s2.Y);
-            Assert.IsTrue(ShamirSecretShare.Interpolate(new[] { s6, s2, s4, s5 }, b + 3).Y == s3.Y);
+            var s5 = new ShamirSecretShare(b + 5, b + ShamirSecretShare.InterpolatePoly(new[] { s1, s2, s3, s4 }).EvaluateAt(5));
+            var s6 = new ShamirSecretShare(b + 6, b + ShamirSecretShare.InterpolatePoly(new[] { s1, s2, s3, s4 }).EvaluateAt(6));
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s2, s3, s4, s5 }).EvaluateAt(1) == s1.Y);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s2, s3, s4, s6 }).EvaluateAt(1) == s1.Y);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s6, s3, s4, s5 }).EvaluateAt(2) == s2.Y);
+            Assert.IsTrue(ShamirSecretShare.InterpolatePoly(new[] { s6, s2, s4, s5 }).EvaluateAt(3) == s3.Y);
         }
 
         [TestMethod()]
@@ -62,7 +62,7 @@ namespace ThesisRationalSharingTest {
             var s3 = new ShamirSecretShare(b + 3, b + 5);
             var s4 = new ShamirSecretShare(b + 4, b + 7);
             var s5s = Enumerable.Range(0, m).Select(i => new ShamirSecretShare(b + 9, b + i));
-            var y9s = s5s.Select(e => ShamirSecretShare.Interpolate(new[] { s1, s2, s3, s4, e }, b + 11).Y.Value);
+            var y9s = s5s.Select(e => ShamirSecretShare.InterpolatePoly(new[] { s1, s2, s3, s4, e }).EvaluateAt(11));
             Assert.IsTrue(y9s.Distinct().Count() == m);
         }
     }

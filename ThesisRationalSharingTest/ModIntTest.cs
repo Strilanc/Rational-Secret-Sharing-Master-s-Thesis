@@ -5,7 +5,7 @@ using System.Numerics;
 namespace ThesisRationalSharingTest {
     [TestClass()]
     public class ModIntTest {
-        private static void ExpectException(Action action) {
+        public static void ExpectException(Action action) {
             try {
                 action.Invoke();
                 Assert.Fail("Expected an exception");

@@ -18,6 +18,9 @@ public struct ShamirSecretShare {
     public static ShamirSecretShare From(BigInteger x, BigInteger y, BigInteger modulus) {
         return new ShamirSecretShare(ModInt.From(x, modulus), ModInt.From(y, modulus));
     }
+    public static ShamirSecretShare FromPoly(ModIntPolynomial poly, BigInteger x) {
+        return new ShamirSecretShare(ModInt.From(x, poly.Modulus), poly.EvaluateAt(x));
+    }
 
     private static ModInt Sum(IEnumerable<ModInt> sequence) {
         return sequence.Aggregate((a, e) => a + e);
@@ -25,21 +28,18 @@ public struct ShamirSecretShare {
     private static ModInt Product(IEnumerable<ModInt> sequence) {
         return sequence.Aggregate((a, e) => a * e);
     }
-    public static ShamirSecretShare Interpolate(IList<ShamirSecretShare> shares, ModInt targetX) {
+    public static ModIntPolynomial InterpolatePoly(IList<ShamirSecretShare> shares) {
         Contract.Requires(shares != null);
         Contract.Requires(shares.Any());
-        Contract.Requires(shares.All(e => e.X != targetX));
-        Contract.Requires(shares.All(e => e.Modulus == targetX.Modulus));
+        Contract.Requires(shares.All(e => e.Modulus == shares.First().Modulus));
         Contract.Requires(shares.Select(e => e.X).Distinct().Count() == shares.Count);
-
-        var targetY = Sum(shares.Select(e => {
-            var otherShares = shares.Except(new[] { e });
-            if (!otherShares.Any()) return e.Y;            
-            var numerator = Product(otherShares.Select(f => targetX - f.X));
-            var denominator = Product(otherShares.Select(f => e.X - f.X));
-            return e.Y * numerator * denominator.MultiplicativeInverse();
-        }));
-
-        return new ShamirSecretShare(targetX, targetY);
+        return ModIntPolynomial.FromInterpolation(shares.Select(e => Tuple.Create(e.X.Value, e.Y.Value)).ToArray(), shares.First().Modulus);
+    }
+    public static BigInteger InterpolateSecret(IList<ShamirSecretShare> shares) {
+        Contract.Requires(shares != null);
+        Contract.Requires(shares.Any());
+        Contract.Requires(shares.All(e => e.Modulus == shares.First().Modulus));
+        Contract.Requires(shares.Select(e => e.X).Distinct().Count() == shares.Count);
+        return InterpolatePoly(shares).EvaluateAt(0).Value;
     }
 }
