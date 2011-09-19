@@ -67,9 +67,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ModIntPolynomial.cs" />
-    <Compile Include="ModInt.cs" />
-    <Compile Include="ShamirSecretSharing.cs" />
+    <Compile Include="Crypto\BlumBlumShub.cs" />
+    <Compile Include="Crypto\Extensions.cs" />
+    <Compile Include="Crypto\RSA.cs" />
+    <Compile Include="Crypto\HashCommitment.cs" />
+    <Compile Include="Crypto\DummyCryptography.cs" />
+    <Compile Include="Crypto\Interfaces.cs" />
+    <Compile Include="RationalSynchronousProtocol.cs" />
+    <Compile Include="Math\ModIntPolynomial.cs" />
+    <Compile Include="Crypto\ShamirSecretSharing.cs" />
+    <Compile Include="Math\ModInt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SynchronousNetwork.cs" />
   </ItemGroup>
