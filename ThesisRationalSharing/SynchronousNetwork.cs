@@ -9,17 +9,20 @@ public interface ISyncSocket<TParticipant, TMessage> {
     ISet<TParticipant> GetParticipants();
     Dictionary<TParticipant, TMessage> GetReceivedMessages();
 }
-public struct ActorEndRoundResult {
+public struct EndRoundResult {
     public readonly bool Finished;
     public readonly BigInteger? OptionalResult;
-    public ActorEndRoundResult(bool finished = false, BigInteger? optionalResult = default(BigInteger?)) {
+    public EndRoundResult(bool finished = false, BigInteger? optionalResult = default(BigInteger?)) {
         this.Finished = finished;
         this.OptionalResult = optionalResult;
     }
 }
 public interface IRoundActor {
     void BeginRound(int round);
-    ActorEndRoundResult EndRound(int round);
+    EndRoundResult EndRound(int round);
+}
+public interface IPlayer {
+    int Index { get; }
 }
 
 public class SyncNetwork<TParticipant, TMessage> {

@@ -126,13 +126,8 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
         throw new NotImplementedException();
     }
 
-    public interface IPlayer {
-        int Index { get; }
-        TPublicKey PublicKey { get; }
-    }
     [DebuggerDisplay("{ToString()}")]
     public class RationalPlayer : IPlayer, AsyncNetwork<IPlayer, TEncryptedMessage>.IActor {
-        public TPublicKey PublicKey { get { return share.PublicKey; } }
         public int Index { get { return share.CommonIndex; } }
 
         public readonly Share share;
@@ -158,16 +153,16 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
             return cooperatingPlayers.ToDictionary(e => e, e => scheme.GetRoundMessage(round, share));
         }
 
-        public ActorEndRoundResult EndRound(int round) {
-            Contract.Ensures(!Contract.Result<ActorEndRoundResult>().OptionalResult.HasValue || Contract.Result<ActorEndRoundResult>().Finished);
+        public EndRoundResult EndRound(int round) {
+            Contract.Ensures(!Contract.Result<EndRoundResult>().OptionalResult.HasValue || Contract.Result<EndRoundResult>().Finished);
 
             try {
                 var sender = cooperatingPlayers.Where(e => e.Index == round % share.Common.Total).FirstOrDefault();
-                if (sender == null) return new ActorEndRoundResult();
+                if (sender == null) return new EndRoundResult();
 
                 if (roundMessage == null) {
                     cooperatingPlayers.Remove(sender);
-                    return new ActorEndRoundResult(cooperatingPlayers.Count < share.Common.Threshold);
+                    return new EndRoundResult(cooperatingPlayers.Count < share.Common.Threshold);
                 }
 
                 var mask = share.Masks[sender.Index];
@@ -177,9 +172,9 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
 
                 var potentialSecret = scheme.wrappedSharingScheme.TryCombine(share.Common.Threshold, lastReceivedShares.ToArray());
                 if (potentialSecret == null || !share.Common.Commitment.Matches(potentialSecret.Value))
-                    return new ActorEndRoundResult();
+                    return new EndRoundResult();
                 
-                return new ActorEndRoundResult(finished: true, optionalResult: potentialSecret);
+                return new EndRoundResult(finished: true, optionalResult: potentialSecret);
             } finally {
                 roundMessage = null;
             }
@@ -187,7 +182,7 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
         public void ReceiveMessage(int round, IPlayer sender, TEncryptedMessage message) {
             if (!cooperatingPlayers.Contains(sender)
                     || sender.Index != round % share.Common.Total
-                    || !scheme.IsMessageValid(round, share.Common.Nonce, sender.PublicKey, message)) {
+                    || !scheme.IsMessageValid(round, share.Common.Nonce, share.Common.PublicKeys[sender.Index], message)) {
                 cooperatingPlayers.Remove(sender);
             } else {
                 roundMessage = Tuple.Create(message);

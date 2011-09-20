@@ -110,13 +110,8 @@ public class SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPriva
         return Combine(degree, shares);
     }
 
-    public interface IPlayer {
-        TWrappedShare Mask { get; }
-        TPublicKey PublicKey { get; }
-    }
     public class RationalPlayer : IPlayer, IRoundActor {
-        public TWrappedShare Mask { get { return share.Mask; } }
-        public TPublicKey PublicKey { get { return share.PublicKey; } }
+        public int Index { get { return share.CommonIndex; } }
 
         public readonly Share share;
         public readonly ISyncSocket<IPlayer, TEncryptedMessage> socket;
@@ -142,21 +137,21 @@ public class SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPriva
             if (cooperatingPlayers == null) cooperatingPlayers = new HashSet<IPlayer>(socket.GetParticipants());
             socket.SetMessageToSendTo(cooperatingPlayers, scheme.GetRoundMessage(round, share));
         }
-        public ActorEndRoundResult EndRound(int round) {
-            Contract.Ensures(!Contract.Result<ActorEndRoundResult>().OptionalResult.HasValue || Contract.Result<ActorEndRoundResult>().Finished);
+        public EndRoundResult EndRound(int round) {
+            Contract.Ensures(!Contract.Result<EndRoundResult>().OptionalResult.HasValue || Contract.Result<EndRoundResult>().Finished);
             var common = share.Common;
             var received = socket.GetReceivedMessages();
-            var validReceived = received.Where(e => scheme.IsMessageValid(round, common.Nonce, e.Key.PublicKey, e.Value));
+            var validReceived = received.Where(e => scheme.IsMessageValid(round, common.Nonce, common.PublicKeys[e.Key.Index], e.Value));
             
             cooperatingPlayers.IntersectWith(validReceived.Select(e => e.Key));
-            if (cooperatingPlayers.Count < common.Threshold) return new ActorEndRoundResult(finished: true);
+            if (cooperatingPlayers.Count < common.Threshold) return new EndRoundResult(finished: true);
 
-            var roundShares = validReceived.Select(e => scheme.shareMixingScheme.Unmix(e.Key.Mask, e.Value)).ToArray();
+            var roundShares = validReceived.Select(e => scheme.shareMixingScheme.Unmix(common.Masks[e.Key.Index], e.Value)).ToArray();
             var potentialSecret = scheme.wrappedSharingScheme.TryCombine(common.Threshold, roundShares);
             if (potentialSecret == null || !common.Commitment.Matches(potentialSecret.Value))
-                return new ActorEndRoundResult();
+                return new EndRoundResult();
 
-            return new ActorEndRoundResult(finished: true, optionalResult: potentialSecret);
+            return new EndRoundResult(finished: true, optionalResult: potentialSecret);
         }
     }
 }

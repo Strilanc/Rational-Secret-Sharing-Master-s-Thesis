@@ -9,7 +9,7 @@ public static class AsyncNetwork<TParticipant, TMessage> {
         void Init(IEnumerable<TParticipant> players);
         Dictionary<TParticipant, TMessage> GetRoundMessages(int round);
         void ReceiveMessage(int round, TParticipant sender, TMessage message);
-        ActorEndRoundResult EndRound(int round);
+        EndRoundResult EndRound(int round);
     }
 
     public static Dictionary<T, BigInteger> Run<T>(IEnumerable<T> roundActors, ISecureRandomNumberGenerator rng) where T : IActor, TParticipant {

@@ -57,9 +57,6 @@
     <Compile Include="ShamirSecretShareTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Shadow Include="Test References\ThesisRationalSharing.accessor" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\ThesisRationalSharing\ThesisRationalSharing.csproj">
       <Project>{D4C51232-04C5-4CC0-ADAF-94EA11747890}</Project>
       <Name>ThesisRationalSharing</Name>
