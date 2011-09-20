@@ -39,18 +39,21 @@ public class RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPubl
             masks: shareMasks, 
             commitment: HashCommitment.FromValueAndGeneratedSalt(secret, rng),
             threshold: threshold);
-        return keys.Select(e => new Share(e.Item1, e.Item2, common)).ToArray();
+        return keys.Select((e, i) => new Share(e.Item2, common, i)).ToArray();
     }
 
-    public Tuple<TEncryptedMessage> GetRoundMessage(BigInteger round, Share share) {
-        return Tuple.Create(publicCryptoScheme.PrivateEncrypt(share.PrivateKey, roundNonceMixingScheme.Mix(round, share.common.Nonce)));
+    public TEncryptedMessage GetRoundMessage(BigInteger round, Share share) {
+        return publicCryptoScheme.PrivateEncrypt(share.PrivateKey, roundNonceMixingScheme.Mix(round, share.Common.Nonce));
     }
     public Tuple<TEncryptedMessage>[] Validate(BigInteger round, CommonShare common, Tuple<TEncryptedMessage>[] messages) {
         return messages.Zip(common.PublicKeys, (m, k) => {
             if (m == null) return null;
-            if (publicCryptoScheme.PublicDecrypt(k, m.Item1) != round + common.Nonce) return null;
+            if (!IsMessageValid(round, common.Nonce, k, m.Item1)) return null;
             return m;
         }).ToArray();
+    }
+    public bool IsMessageValid(BigInteger round, BigInteger nonce, TPublicKey key, TEncryptedMessage message) {
+        return publicCryptoScheme.PublicDecrypt(key, message) == roundNonceMixingScheme.Mix(round, nonce);
     }
     public BigInteger? TryGetSecret(BigInteger round, CommonShare common, Tuple<TEncryptedMessage>[] validatedMessages) {
         var roundShares = validatedMessages.Zip(common.Masks, (v, m) => v == null ? null : Tuple.Create(shareMixingScheme.Unmix(m, v.Item1)))
@@ -80,22 +83,24 @@ public class RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPubl
         }
     }
     public class Share {
-        public readonly TPublicKey PublicKey;
+        public TPublicKey PublicKey { get { return Common.PublicKeys[CommonIndex]; } }
+        public TWrappedShare Mask { get { return Common.Masks[CommonIndex]; } }
         public readonly TPrivateKey PrivateKey;
-        public readonly CommonShare common;
-        public Share(TPublicKey publicKey, TPrivateKey privateKey, CommonShare common) {
-            this.PublicKey = publicKey;
+        public readonly CommonShare Common;
+        public readonly int CommonIndex;
+        public Share(TPrivateKey privateKey, CommonShare common, int commonIndex) {
             this.PrivateKey = privateKey;
-            this.common = common;
+            this.Common = common;
+            this.CommonIndex = commonIndex;
         }
     }
 
 
     public BigInteger Combine(int degree, IList<Share> shares) {
         int i = 0;
-        var common = shares.First().common;
+        var common = shares.First().Common;
         while (true) {
-            var messages = shares.Select(e => GetRoundMessage(i, e)).ToArray();
+            var messages = shares.Select(e => Tuple.Create(GetRoundMessage(i, e))).ToArray();
             var secret = TryGetSecret(i, common, messages);
             if (secret != null) return secret.Value;
             i += 1;
@@ -103,5 +108,76 @@ public class RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPubl
     }
     public BigInteger? TryCombine(int degree, IList<Share> shares) {
         return Combine(degree, shares);
+    }
+
+    public interface IPlayer {
+        TWrappedShare Mask { get; }
+        TPublicKey PublicKey { get; }
+    }
+    public class RationalPlayer : IPlayer, ITrigger {
+        public TWrappedShare Mask { get { return share.Mask; } }
+        public TPublicKey PublicKey { get { return share.PublicKey; } }
+
+        public readonly Share share;
+        public readonly ISyncSocket<IPlayer, TEncryptedMessage> socket;
+        private HashSet<IPlayer> cooperatingPlayers = null;
+        private readonly RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme;
+
+        private RationalPlayer(
+                RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
+                Share share,
+                SyncNetwork<IPlayer, TEncryptedMessage> net) {
+            this.scheme = scheme;
+            this.share = share;
+            this.socket = net.Connect(this);
+        }
+        public static RationalPlayer FromConnect(
+                RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
+                Share share,
+                SyncNetwork<IPlayer, TEncryptedMessage> net) {
+            return new RationalPlayer(scheme, share, net);
+        }
+
+        public void BeginRound(int round) {
+            if (cooperatingPlayers == null) cooperatingPlayers = new HashSet<IPlayer>(socket.GetParticipants());
+            socket.SetMessageToSendTo(cooperatingPlayers, scheme.GetRoundMessage(round, share));
+        }
+        public Tuple<bool, BigInteger?> EndRound(int round) {
+            var common = share.Common;
+            var received = socket.GetReceivedMessages();
+            var validReceived = received.Where(e => scheme.IsMessageValid(round, common.Nonce, e.Key.PublicKey, e.Value));
+            
+            cooperatingPlayers.IntersectWith(validReceived.Select(e => e.Key));
+            if (cooperatingPlayers.Count < common.Threshold) return Tuple.Create(false, default(BigInteger?));
+
+            var roundShares = validReceived.Select(e => scheme.shareMixingScheme.Unmix(e.Key.Mask, e.Value)).ToArray();
+            var potentialSecret = scheme.wrappedSharingScheme.TryCombine(common.Threshold, roundShares);
+            if (potentialSecret == null || !common.Commitment.Matches(potentialSecret.Value))
+                return Tuple.Create(true, default(BigInteger?));
+
+            return Tuple.Create(false, (BigInteger?)potentialSecret.Value);
+        }
+    }
+
+    public static Dictionary<T, BigInteger> TryRun<T>(SyncNetwork<IPlayer, BigInteger> net, IEnumerable<T> triggers) 
+            where T : ITrigger {
+        int round = 0;
+        var result = new Dictionary<T, BigInteger>();
+        var active = new HashSet<T>(triggers);
+        while (active.Except(result.Keys).Any()) {
+            net.StartRound();
+            foreach (var t in active) {
+                t.BeginRound(round);
+            }
+            net.EndRound();
+            foreach (var t in active.ToArray()) {
+                var r = t.EndRound(round);
+                if (!r.Item1) active.Remove(t);
+                if (r.Item2.HasValue) result[t] = r.Item2.Value;
+            }
+
+            round += 1;
+        }
+        return result;
     }
 }

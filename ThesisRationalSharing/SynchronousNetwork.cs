@@ -2,10 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Numerics;
 
 public interface ISyncSocket<TParticipant, TMessage> {
     void SetMessageToSendTo(IEnumerable<TParticipant> receivers, TMessage message);
+    ISet<TParticipant> GetParticipants();
     Dictionary<TParticipant, TMessage> GetReceivedMessages();
+}
+public interface ITrigger {
+    void BeginRound(int round);
+    Tuple<bool, BigInteger?> EndRound(int round);
 }
 
 public class SyncNetwork<TParticipant, TMessage> {
@@ -28,6 +34,9 @@ public class SyncNetwork<TParticipant, TMessage> {
                 else
                     p[Participant] = message;
             }
+        }
+        public ISet<TParticipant> GetParticipants() {
+            return new HashSet<TParticipant>(this.Network.sockets.Keys);
         }
         public Dictionary<TParticipant, TMessage> GetReceivedMessages() {
             if (Network.inRound) throw new InvalidOperationException("In a started round.");

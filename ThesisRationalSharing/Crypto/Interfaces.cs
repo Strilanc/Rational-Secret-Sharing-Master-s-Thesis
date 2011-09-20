@@ -59,7 +59,6 @@ public abstract class ContractClassForISharingScheme<TShare> : ISharingScheme<TS
 
     public BigInteger? TryCombine(int degree, IList<TShare> shares) {
         Contract.Requires(degree > 0);
-        Contract.Requires(shares.Count >= degree);
         throw new NotImplementedException();
     }
 

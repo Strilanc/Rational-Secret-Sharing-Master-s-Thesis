@@ -71,7 +71,6 @@
     <Compile Include="Crypto\Extensions.cs" />
     <Compile Include="Crypto\RSA.cs" />
     <Compile Include="Crypto\HashCommitment.cs" />
-    <Compile Include="Crypto\DummyCryptography.cs" />
     <Compile Include="Crypto\Interfaces.cs" />
     <Compile Include="RationalSynchronousProtocol.cs" />
     <Compile Include="Math\ModIntPolynomial.cs" />

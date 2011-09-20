@@ -37,6 +37,7 @@ public class ShamirSecretSharing : ISharingScheme<ShamirSecretSharing.Share> {
         return r.Value;
     }
     public BigInteger? TryCombine(int degree, IList<Share> shares) {
+        if (shares.Count < degree) return null;
         var poly = InterpolatePoly(shares.Take(degree).ToArray());
         if (shares.Any(e => poly.EvaluateAt(e.X) != e.Y)) return null;
         return poly.EvaluateAt(0).Value;
