@@ -5,13 +5,13 @@ using System.Text;
 using System.Numerics;
 using System.Diagnostics.Contracts;
 
-public class RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> : ISharingScheme<RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>.Share> {
+public class SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> : ISharingScheme<SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>.Share> {
     public readonly ISharingScheme<TWrappedShare> wrappedSharingScheme;
     public readonly IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme;
     public readonly IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme;
     public readonly IMixingScheme<BigInteger, BigInteger> roundNonceMixingScheme;
 
-    public RationalSynchronousProtocol(
+    public SyncedProtocol(
             ISharingScheme<TWrappedShare> wrappedSharingScheme, 
             IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme,
             IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme,
@@ -121,10 +121,10 @@ public class RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPubl
         public readonly Share share;
         public readonly ISyncSocket<IPlayer, TEncryptedMessage> socket;
         private HashSet<IPlayer> cooperatingPlayers = null;
-        private readonly RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme;
+        private readonly SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme;
 
         private RationalPlayer(
-                RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
+                SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
                 Share share,
                 SyncNetwork<IPlayer, TEncryptedMessage> net) {
             this.scheme = scheme;
@@ -132,7 +132,7 @@ public class RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPubl
             this.socket = net.Connect(this);
         }
         public static RationalPlayer FromConnect(
-                RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
+                SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
                 Share share,
                 SyncNetwork<IPlayer, TEncryptedMessage> net) {
             return new RationalPlayer(scheme, share, net);

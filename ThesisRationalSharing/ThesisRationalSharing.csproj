@@ -69,13 +69,13 @@
   <ItemGroup>
     <Compile Include="AsynchronousNetwork.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="RationalAsynchronousProtocol.cs" />
+    <Compile Include="Protocols\AsyncVerified.cs" />
     <Compile Include="Crypto\BlumBlumShub.cs" />
     <Compile Include="Crypto\Extensions.cs" />
     <Compile Include="Crypto\RSA.cs" />
     <Compile Include="Crypto\HashCommitment.cs" />
     <Compile Include="Crypto\Interfaces.cs" />
-    <Compile Include="RationalSynchronousProtocol.cs" />
+    <Compile Include="Protocols\Synced.cs" />
     <Compile Include="Math\ModIntPolynomial.cs" />
     <Compile Include="Crypto\ShamirSecretSharing.cs" />
     <Compile Include="Math\ModInt.cs" />

@@ -6,13 +6,13 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 
-public class RationalAsynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> : ISharingScheme<RationalAsynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>.Share> {
+public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> : ISharingScheme<AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>.Share> {
     public readonly ISharingScheme<TWrappedShare> wrappedSharingScheme;
     public readonly IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme;
     public readonly IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme;
     public readonly IMixingScheme<BigInteger, BigInteger> roundNonceMixingScheme;
 
-    public RationalAsynchronousProtocol(
+    public AsyncVerifiedProtocol(
             ISharingScheme<TWrappedShare> wrappedSharingScheme, 
             IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme,
             IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme,
@@ -138,11 +138,11 @@ public class RationalAsynchronousProtocol<TWrappedShare, TEncryptedMessage, TPub
         public readonly Share share;
         private HashSet<IPlayer> cooperatingPlayers = null;
         private readonly Queue<TWrappedShare> lastReceivedShares = new Queue<TWrappedShare>();
-        private readonly RationalAsynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme;
+        private readonly AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme;
         private Tuple<TEncryptedMessage> roundMessage = null;
 
         public RationalPlayer(
-                RationalAsynchronousProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
+                AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
                 Share share) {
             this.scheme = scheme;
             this.share = share;
