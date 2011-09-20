@@ -114,7 +114,7 @@ public class RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPubl
         TWrappedShare Mask { get; }
         TPublicKey PublicKey { get; }
     }
-    public class RationalPlayer : IPlayer, ITrigger {
+    public class RationalPlayer : IPlayer, IRoundActor {
         public TWrappedShare Mask { get { return share.Mask; } }
         public TPublicKey PublicKey { get { return share.PublicKey; } }
 
@@ -142,42 +142,21 @@ public class RationalSynchronousProtocol<TWrappedShare, TEncryptedMessage, TPubl
             if (cooperatingPlayers == null) cooperatingPlayers = new HashSet<IPlayer>(socket.GetParticipants());
             socket.SetMessageToSendTo(cooperatingPlayers, scheme.GetRoundMessage(round, share));
         }
-        public Tuple<bool, BigInteger?> EndRound(int round) {
+        public ActorEndRoundResult EndRound(int round) {
+            Contract.Ensures(!Contract.Result<ActorEndRoundResult>().OptionalResult.HasValue || Contract.Result<ActorEndRoundResult>().Finished);
             var common = share.Common;
             var received = socket.GetReceivedMessages();
             var validReceived = received.Where(e => scheme.IsMessageValid(round, common.Nonce, e.Key.PublicKey, e.Value));
             
             cooperatingPlayers.IntersectWith(validReceived.Select(e => e.Key));
-            if (cooperatingPlayers.Count < common.Threshold) return Tuple.Create(false, default(BigInteger?));
+            if (cooperatingPlayers.Count < common.Threshold) return new ActorEndRoundResult(finished: true);
 
             var roundShares = validReceived.Select(e => scheme.shareMixingScheme.Unmix(e.Key.Mask, e.Value)).ToArray();
             var potentialSecret = scheme.wrappedSharingScheme.TryCombine(common.Threshold, roundShares);
             if (potentialSecret == null || !common.Commitment.Matches(potentialSecret.Value))
-                return Tuple.Create(true, default(BigInteger?));
+                return new ActorEndRoundResult();
 
-            return Tuple.Create(false, (BigInteger?)potentialSecret.Value);
+            return new ActorEndRoundResult(finished: true, optionalResult: potentialSecret);
         }
-    }
-
-    public static Dictionary<T, BigInteger> TryRun<T>(SyncNetwork<IPlayer, BigInteger> net, IEnumerable<T> triggers) 
-            where T : ITrigger {
-        int round = 0;
-        var result = new Dictionary<T, BigInteger>();
-        var active = new HashSet<T>(triggers);
-        while (active.Except(result.Keys).Any()) {
-            net.StartRound();
-            foreach (var t in active) {
-                t.BeginRound(round);
-            }
-            net.EndRound();
-            foreach (var t in active.ToArray()) {
-                var r = t.EndRound(round);
-                if (!r.Item1) active.Remove(t);
-                if (r.Item2.HasValue) result[t] = r.Item2.Value;
-            }
-
-            round += 1;
-        }
-        return result;
     }
 }

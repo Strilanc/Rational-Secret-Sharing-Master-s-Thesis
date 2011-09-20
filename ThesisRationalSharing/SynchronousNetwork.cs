@@ -9,9 +9,17 @@ public interface ISyncSocket<TParticipant, TMessage> {
     ISet<TParticipant> GetParticipants();
     Dictionary<TParticipant, TMessage> GetReceivedMessages();
 }
-public interface ITrigger {
+public struct ActorEndRoundResult {
+    public readonly bool Finished;
+    public readonly BigInteger? OptionalResult;
+    public ActorEndRoundResult(bool finished = false, BigInteger? optionalResult = default(BigInteger?)) {
+        this.Finished = finished;
+        this.OptionalResult = optionalResult;
+    }
+}
+public interface IRoundActor {
     void BeginRound(int round);
-    Tuple<bool, BigInteger?> EndRound(int round);
+    ActorEndRoundResult EndRound(int round);
 }
 
 public class SyncNetwork<TParticipant, TMessage> {
@@ -65,5 +73,27 @@ public class SyncNetwork<TParticipant, TMessage> {
     public void EndRound() {
         if (!inRound) throw new InvalidOperationException("Round already ended.");
         inRound = false;
+    }
+
+    public Dictionary<T, BigInteger> Run<T>(IEnumerable<T> roundActors) where T : IRoundActor {
+        int round = 0;
+        var result = new Dictionary<T, BigInteger>();
+        var activeActors = new HashSet<T>(roundActors);
+        while (activeActors.Except(result.Keys).Any()) {
+            StartRound();
+            foreach (var t in activeActors) {
+                t.BeginRound(round);
+            }
+
+            EndRound();
+            foreach (var t in activeActors.ToArray()) {
+                var r = t.EndRound(round);
+                if (r.Finished) activeActors.Remove(t);
+                if (r.OptionalResult.HasValue) result[t] = r.OptionalResult.Value;
+            }
+
+            round += 1;
+        }
+        return result;
     }
 }
