@@ -24,8 +24,7 @@ public struct ModInt : IEquatable<ModInt> {
     /** Creates a modular integer from the given value and modulus, reducing the value if necessary. */
     public static ModInt From(BigInteger value, BigInteger modulus) {
         Contract.Requires(modulus > 0);
-        if (value < 0) return From(value % modulus + modulus, modulus);
-        return new ModInt(value % modulus, modulus);
+        return new ModInt(value.ProperMod(modulus), modulus);
     }
 
     public static ModInt operator -(ModInt value) {

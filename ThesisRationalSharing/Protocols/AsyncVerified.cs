@@ -59,27 +59,8 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
     public TEncryptedMessage GetRoundMessage(BigInteger round, Share share) {
         return publicCryptoScheme.PrivateEncrypt(share.PrivateKey, roundNonceMixingScheme.Mix(round, share.Common.Nonce));
     }
-    public Tuple<TEncryptedMessage>[] Validate(BigInteger round, CommonShare common, Tuple<TEncryptedMessage>[] messages) {
-        return messages.Zip(common.PublicKeys, (m, k) => {
-            if (m == null) return null;
-            if (!IsMessageValid(round, common.Nonce, k, m.Item1)) return null;
-            return m;
-        }).ToArray();
-    }
     public bool IsMessageValid(BigInteger round, BigInteger nonce, TPublicKey key, TEncryptedMessage message) {
         return publicCryptoScheme.PublicDecrypt(key, message) == roundNonceMixingScheme.Mix(round, nonce);
-    }
-    public BigInteger? TryGetSecret(BigInteger round, Share share, Tuple<TEncryptedMessage>[] validatedMessages) {
-        var roundShares = validatedMessages.Zip(share.Masks, (v, m) => v == null ? null : Tuple.Create(shareMixingScheme.Unmix(m, v.Item1)))
-                                           .Where(e => e != null)
-                                           .Select(e => e.Item1)
-                                           .ToArray();
-
-        if (roundShares.Length < share.Common.Threshold) return null;
-        var potentialSecret = wrappedSharingScheme.TryCombine(share.Common.Threshold, roundShares);
-        if (potentialSecret == null) return null;
-        if (!share.Common.Commitment.Matches(potentialSecret.Value)) return null;
-        return potentialSecret.Value;
     }
 
     [DebuggerDisplay("{ToString()}")]
@@ -120,10 +101,31 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
 
 
     public BigInteger Combine(int degree, IList<Share> shares) {
-        throw new NotImplementedException();
+        Contract.Requires<ArgumentException>(shares.GroupBy(e => e.Common).Count() == 1);
+        Contract.Requires<ArgumentException>(degree == shares.First().Common.Threshold);
+        var dares = shares.ToDictionary(e => e.CommonIndex, e => e);
+        var s = shares.First();
+        var total = s.Common.Total;
+        int round = 0;
+        var q = new Queue<TWrappedShare>();
+        while (true) {
+            var i = round % total;
+            if (!dares.ContainsKey(i)) continue;
+            
+            var msg = GetRoundMessage(round, dares[i]);
+            var msk = s.Masks[i];
+            var shr = shareMixingScheme.Unmix(msk, msg);
+            q.Enqueue(shr);
+            
+            if (q.Count > degree) q.Dequeue();
+            var n = wrappedSharingScheme.TryCombine(degree, q.ToArray());
+            if (n.HasValue && s.Common.Commitment.Matches(n.Value)) return n.Value;
+
+            round += 1;
+        }
     }
     public BigInteger? TryCombine(int degree, IList<Share> shares) {
-        throw new NotImplementedException();
+        return Combine(degree, shares);
     }
 
     [DebuggerDisplay("{ToString()}")]

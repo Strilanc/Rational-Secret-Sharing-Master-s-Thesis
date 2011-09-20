@@ -71,7 +71,6 @@
     <Compile Include="Util.cs" />
     <Compile Include="Protocols\AsyncVerified.cs" />
     <Compile Include="Crypto\BlumBlumShub.cs" />
-    <Compile Include="Crypto\Extensions.cs" />
     <Compile Include="Crypto\RSA.cs" />
     <Compile Include="Crypto\HashCommitment.cs" />
     <Compile Include="Crypto\Interfaces.cs" />
