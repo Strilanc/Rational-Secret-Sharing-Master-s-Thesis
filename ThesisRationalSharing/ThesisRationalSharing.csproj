@@ -67,6 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="RationalAsynchronousProtocol.cs" />
     <Compile Include="Crypto\BlumBlumShub.cs" />
     <Compile Include="Crypto\Extensions.cs" />
     <Compile Include="Crypto\RSA.cs" />
