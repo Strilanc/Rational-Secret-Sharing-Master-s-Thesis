@@ -138,20 +138,19 @@ public class SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPriva
             socket.SetMessageToSendTo(cooperatingPlayers, scheme.GetRoundMessage(round, share));
         }
         public EndRoundResult EndRound(int round) {
-            Contract.Ensures(!Contract.Result<EndRoundResult>().OptionalResult.HasValue || Contract.Result<EndRoundResult>().Finished);
             var common = share.Common;
             var received = socket.GetReceivedMessages();
             var validReceived = received.Where(e => scheme.IsMessageValid(round, common.Nonce, common.PublicKeys[e.Key.Index], e.Value));
             
             cooperatingPlayers.IntersectWith(validReceived.Select(e => e.Key));
-            if (cooperatingPlayers.Count < common.Threshold) return new EndRoundResult(finished: true);
+            if (cooperatingPlayers.Count < common.Threshold) return new EndRoundResult(failed: true);
 
             var roundShares = validReceived.Select(e => scheme.shareMixingScheme.Unmix(common.Masks[e.Key.Index], e.Value)).ToArray();
             var potentialSecret = scheme.wrappedSharingScheme.TryCombine(common.Threshold, roundShares);
             if (potentialSecret == null || !common.Commitment.Matches(potentialSecret.Value))
                 return new EndRoundResult();
 
-            return new EndRoundResult(finished: true, optionalResult: potentialSecret);
+            return new EndRoundResult(potentialSecret);
         }
     }
 }

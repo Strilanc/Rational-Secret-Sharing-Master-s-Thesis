@@ -43,7 +43,7 @@ public static class AsyncNetwork<TParticipant, TActor, TMessage> where TActor : 
 
             foreach (var receiver in actors) {
                 var r = receiver.EndRound(round, pendingMessages[receiver]);
-                if (r.Finished) unfinished.Remove(receiver);
+                if (r.Failed) unfinished.Remove(receiver);
                 if (r.OptionalResult.HasValue) {
                     result[receiver] = r.OptionalResult.Value;
                     unfinished.Remove(receiver);

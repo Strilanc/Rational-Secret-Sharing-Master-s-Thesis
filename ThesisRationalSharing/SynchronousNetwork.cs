@@ -10,12 +10,19 @@ public interface ISyncSocket<TParticipant, TMessage> {
     Dictionary<TParticipant, TMessage> GetReceivedMessages();
 }
 public struct EndRoundResult {
-    public readonly bool Finished;
+    public readonly bool Failed;
     public readonly BigInteger? OptionalResult;
-    public EndRoundResult(bool finished = false, BigInteger? optionalResult = default(BigInteger?)) {
-        this.Finished = finished;
-        this.OptionalResult = optionalResult;
+
+    public EndRoundResult(bool failed) {
+        this.Failed = failed;
+        this.OptionalResult = null;
     }
+    public EndRoundResult(BigInteger? result) {
+        this.Failed = false;
+        this.OptionalResult = result;
+    }
+
+    public bool IsTerminal { get { return Failed || OptionalResult.HasValue; } }
 }
 public interface IRoundActor {
     void BeginRound(int round);
@@ -91,7 +98,7 @@ public class SyncNetwork<TParticipant, TMessage> {
             EndRound();
             foreach (var t in activeActors.ToArray()) {
                 var r = t.EndRound(round);
-                if (r.Finished) activeActors.Remove(t);
+                if (r.Failed) activeActors.Remove(t);
                 if (r.OptionalResult.HasValue) result[t] = r.OptionalResult.Value;
             }
 

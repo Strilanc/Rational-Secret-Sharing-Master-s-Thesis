@@ -164,10 +164,10 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
     public class RationalCoalition {
         public readonly AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> Scheme;
         private readonly Colluder[] Colluders;
-        private BigInteger? secret = null;
-
+        private EndRoundResult result = new EndRoundResult();
+        
         public IEnumerable<Share> Shares() {
-            return Colluders.Select(e => e.Hidden.HonestUnderling.Share);
+            return Colluders.Select(e => e.HonestUnderling.Brain.Share);
         }
         public IEnumerable<IActorPlayer<TEncryptedMessage>> GetPlayers() {
             return Colluders;
@@ -175,38 +175,47 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
 
         [DebuggerDisplay("{ToString()}")]
         private class Colluder : IActorPlayer<TEncryptedMessage> {
-            public readonly RationalPlayer Hidden;
+            public readonly HonestPlayer HonestUnderling;
             public readonly RationalCoalition Coalition;
             public readonly bool IsSilent;
 
-            public Colluder(RationalPlayer hidden, RationalCoalition coalition, bool IsSilent) {
-                this.Hidden = hidden;
+            public Colluder(HonestPlayer honestUnderling, RationalCoalition coalition, bool IsSilent) {
+                Contract.Requires(honestUnderling != null);
+                Contract.Requires(coalition != null);
+                this.HonestUnderling = honestUnderling;
                 this.Coalition = coalition;
                 this.IsSilent = IsSilent;
             }
 
-            public int Index { get { return Hidden.Index; } }
+            public int Index { get { return HonestUnderling.Index; } }
             public void Init(IEnumerable<IPlayer> players) {
-                Hidden.Init(players);
+                HonestUnderling.Init(players);
             }
             public Dictionary<IPlayer, TEncryptedMessage> StartRound(int round) {
-                for (int i = 0; i < Coalition.Shares().First().Common.Total; i++)
-                    Coalition.TrySneakRound(i + round);
-                if (Coalition.secret.HasValue) return null;
-                var r = Hidden.StartRound(round);
-                return IsSilent ? null : r;
+                Coalition.TrySneakRound(round + HonestUnderling.Brain.Share.Common.Total);
+                if (Coalition.result.OptionalResult.HasValue || IsSilent) return null;
+                return HonestUnderling.StartRound(round);
             }
             public EndRoundResult EndRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
-                if (Coalition.secret.HasValue) return new EndRoundResult(optionalResult: Coalition.secret);
-                var r = Hidden.EndRound(round, receivedMessages);
-                if (r.OptionalResult.HasValue) Coalition.secret = r.OptionalResult;
-                return r;
+                var silentSender = Coalition.Colluders.FirstOrDefault(e => e.HonestUnderling.Brain.HaveRoundMessage(round));
+                if (silentSender != null) {
+                    receivedMessages = new Dictionary<IPlayer, TEncryptedMessage>() { { silentSender, silentSender.HonestUnderling.Brain.GetRoundMessage(round) } };
+                }
+
+                if (!IsSilent) {
+                    foreach (var colluder in Coalition.Colluders) {
+                        Coalition.result = colluder.HonestUnderling.EndRound(round, receivedMessages);
+                        if (Coalition.result.OptionalResult.HasValue) break;
+                    }
+                }
+
+                return Coalition.result;
             }
 
             public override string ToString() {
                 return String.Format("Colluder (ID: {0}, Silent: {1}) from {2}", Index, IsSilent, Coalition);
             }
-        }
+       }
 
         private RationalCoalition(AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme, Share[] shares) {
             Contract.Requires(scheme != null);
@@ -214,11 +223,11 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
             Contract.Requires(shares.Length >= 1);
             Contract.Requires(shares.Select(e => e.Common).Distinct().IsSingle());
             Contract.Requires(shares.Select(e => e.CommonIndex).Duplicates().None());
-            this.Colluders = shares.Select((e, i) => new Colluder(new RationalPlayer(new HonestPlayer(scheme, e)), this, i == 0)).ToArray();
+            this.Colluders = shares.Select((e, i) => new Colluder(new HonestPlayer(scheme, e), this, i == 0)).ToArray();
             this.Scheme = scheme;
             var c = shares.First().Common;
             if (shares.Length >= c.Threshold) {
-                this.secret = scheme.Combine(c.Threshold, shares);
+                this.result = new EndRoundResult(scheme.Combine(c.Threshold, shares));
             }
         }
         public static RationalCoalition FromShares(AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme, Share[] shares) {
@@ -230,16 +239,23 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
             return new RationalCoalition(scheme, shares);
         }
 
+        private int nextSnuckRound = 0;
         private void TrySneakRound(int round) {
-            if (secret.HasValue) return;
-            var p = Colluders.FirstOrDefault(e => e.Index == round % Shares().First().Common.Total);
-            if (p == null) return;
-            var msg = new Dictionary<IPlayer, TEncryptedMessage>() { 
-                { p,  Scheme.GetRoundMessage(round, p.Hidden.HonestUnderling.Share) } 
-            };
-            foreach (var r in Colluders) {
-                secret = r.Hidden.PeekRound(round, msg).OptionalResult;
-                if (secret.HasValue) return;
+            if (result.IsTerminal) return;
+
+            while (nextSnuckRound < round) {
+                var p = Colluders.FirstOrDefault(e => e.Index == nextSnuckRound % Shares().First().Common.Total);
+                if (p != null) {
+                    var msg = p.HonestUnderling.Brain.GetRoundMessage(nextSnuckRound);
+                    foreach (var r in Colluders) {
+                        r.HonestUnderling.Brain.Receive(nextSnuckRound, p.Index, msg);
+                        if (r.HonestUnderling.Brain.Secret.HasValue) {
+                            result = new EndRoundResult(r.HonestUnderling.Brain.Secret);
+                            return;
+                        }
+                    }
+                }
+                nextSnuckRound += 1;
             }
         }
 
@@ -264,12 +280,8 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
             if (HonestUnderling.Secret.HasValue) return null;
  	        return HonestUnderling.StartRound(round);
         }
-        public EndRoundResult PeekRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
-            if (HonestUnderling.Secret.HasValue) return new EndRoundResult(optionalResult: HonestUnderling.Secret);
-            return HonestUnderling.PeekRound(round, receivedMessages);
-        }
         public EndRoundResult EndRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
-            if (HonestUnderling.Secret.HasValue) return new EndRoundResult(optionalResult: HonestUnderling.Secret);
+            if (HonestUnderling.Secret.HasValue) return new EndRoundResult(HonestUnderling.Secret);
             return HonestUnderling.EndRound(round, receivedMessages);
         }
 
@@ -277,72 +289,98 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
             return String.Format("Rational Player: {0}", Index);
         }
 }
+    [DebuggerDisplay("{ToString()}")]
     public class HonestPlayer : IActorPlayer<TEncryptedMessage> {
-        public readonly AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> Scheme;
-        public readonly Share Share;
+        public readonly ShareFa Brain;
         private HashSet<IPlayer> cooperatingPlayers = null;
-        private MessageSequence<TWrappedShare> reconstructor = null;
 
         public HonestPlayer(
                 AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
                 Share share) {
-            this.Scheme = scheme;
-            this.Share = share;
+            this.Brain = new ShareFa(scheme, share);
         }
 
-        public BigInteger? Secret { get { return reconstructor.Check(); } }
-        public int Index { get { return Share.CommonIndex; } }
+        public BigInteger? Secret { get { return Brain.Secret; } }
+        public int Index { get { return Brain.Share.CommonIndex; } }
 
         public void Init(IEnumerable<IPlayer> players) {
             this.cooperatingPlayers = new HashSet<IPlayer>(players);
+        }
+        public Dictionary<IPlayer, TEncryptedMessage> StartRound(int round) {
+            if (!Brain.HaveRoundMessage(round)) return null;
+            var msg = Brain.GetRoundMessage(round);
+            return cooperatingPlayers.ToDictionary(e => e, e => msg);
+        }
+        public EndRoundResult EndRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
+            cooperatingPlayers.RemoveWhere(c => Brain.IsExpectedRoundSenderIndex(round, c.Index) != receivedMessages.ContainsKey(c));
+            foreach (var msg in receivedMessages) {
+                if (Brain.IsExpectedRoundSenderIndex(round, msg.Key.Index)) {
+                    var valid = Brain.Receive(round, msg.Key.Index, msg.Value);
+                    if (!valid) cooperatingPlayers.Remove(msg.Key);
+                }
+            }
+            
+            Brain.FinishRound(round);
+            if (Brain.Secret.HasValue) return new EndRoundResult(Brain.Secret);
+            return new EndRoundResult(failed: cooperatingPlayers.Count < Brain.Share.Common.Threshold);
+        }
+
+        public override string ToString() {
+            return String.Format("Honest Player: {0}", Index);
+        }
+    }
+    public class ShareFa {
+        public readonly Share Share;
+        public readonly AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> Scheme;
+        private readonly MessageSequence<TWrappedShare> reconstructor;
+
+        public ShareFa(
+                AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
+                Share share) {
+            this.Scheme = scheme;
+            this.Share = share;
+
             this.reconstructor = new MessageSequence<TWrappedShare>(
                 Scheme.wrappedSharingScheme,
                 Share.Common.Commitment,
                 Share.Common.Threshold,
                 Share.Common.Total);
         }
-        public Dictionary<IPlayer, TEncryptedMessage> StartRound(int round) {
-            if (round % Share.Common.Total != Share.CommonIndex) return null; // not our turn to send
-            return cooperatingPlayers.ToDictionary(e => e, e => Scheme.GetRoundMessage(round, Share));
-        }
-        public EndRoundResult PeekRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
-            EndRoundHelper(round, receivedMessages);
-            return new EndRoundResult(
-                finished: cooperatingPlayers.Count < Share.Common.Threshold,
-                optionalResult: reconstructor.Check());
-        }
-        public EndRoundResult EndRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
-            EndRoundHelper(round, receivedMessages);
-            reconstructor.NoteFinished(round);
-            return new EndRoundResult(
-                finished: cooperatingPlayers.Count < Share.Common.Threshold,
-                optionalResult: reconstructor.Check());
-        }
-        private void EndRoundHelper(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
-            if (reconstructor.Check().HasValue) return;
 
-            var expectedSenderIndex = round % Share.Common.Total;
-            foreach (var unexpected in receivedMessages.Keys.Where(e => e.Index != expectedSenderIndex))
-                cooperatingPlayers.Remove(unexpected);
+        public BigInteger? Secret { get { return reconstructor.Check(); } }
 
-            var expectedKey = receivedMessages.Keys.Where(e => e.Index == expectedSenderIndex).FirstOrDefault();
-            if (expectedKey == null || !cooperatingPlayers.Contains(expectedKey)) {
-                cooperatingPlayers.RemoveWhere(e => e.Index == expectedSenderIndex);
-                return;
+        [Pure]
+        public bool IsExpectedRoundSenderIndex(int round, int senderIndex) {
+            Contract.Requires(round >= 0);
+            return round % Share.Common.Total == senderIndex;
+        }
+        [Pure]
+        public bool HaveRoundMessage(int round) {
+            Contract.Requires(round >= 0);
+            return IsExpectedRoundSenderIndex(round, Share.CommonIndex);
+        }
+        [Pure]
+        public TEncryptedMessage GetRoundMessage(int round) {
+            Contract.Requires(round >= 0);
+            Contract.Requires(HaveRoundMessage(round));
+            return Scheme.GetRoundMessage(round, Share);
+        }
+
+        public bool Receive(int round, int senderIndex, TEncryptedMessage message) {
+            Contract.Requires(round >= 0);
+            Contract.Requires(IsExpectedRoundSenderIndex(round, senderIndex));
+
+            if (!Scheme.IsMessageValid(round, Share.Common.Nonce, Share.Common.PublicKeys[senderIndex], message)) {
+                return false;
             }
-
-            var message = receivedMessages[expectedKey];
-            if (!Scheme.IsMessageValid(round, Share.Common.Nonce, Share.Common.PublicKeys[expectedSenderIndex], message)) {
-                cooperatingPlayers.Remove(expectedKey);
-                return;
-            }
-            var mask = Share.Masks[expectedSenderIndex];
+            
+            var mask = Share.Masks[senderIndex];
             var shr = Scheme.shareMixingScheme.Unmix(mask, message);
             reconstructor.Take(round, shr);
+            return true;
         }
-
-        public override string ToString() {
-            return String.Format("Honest Player: {0}", Index);
+        public void FinishRound(int round) {
+            reconstructor.NoteFinished(round);
         }
     }
 }
