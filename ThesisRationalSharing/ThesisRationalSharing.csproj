@@ -68,12 +68,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsynchronousNetwork.cs" />
+    <Compile Include="Crypto\ISecretSharingScheme.cs" />
+    <Compile Include="Crypto\IPublicKeyCryptoScheme.cs" />
+    <Compile Include="Crypto\ICommitment.cs" />
+    <Compile Include="Crypto\ISecureRandomNumberGenerator.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Protocols\AsyncVerified.cs" />
     <Compile Include="Crypto\BlumBlumShub.cs" />
     <Compile Include="Crypto\RSA.cs" />
     <Compile Include="Crypto\HashCommitment.cs" />
-    <Compile Include="Crypto\Interfaces.cs" />
+    <Compile Include="Crypto\IMixingScheme.cs" />
     <Compile Include="Protocols\Synced.cs" />
     <Compile Include="Math\ModIntPolynomial.cs" />
     <Compile Include="Crypto\ShamirSecretSharing.cs" />

@@ -6,25 +6,54 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 
 public static class Util {
+    [Pure]
+    public static bool None<T>(this IEnumerable<T> items) {
+        return !items.Any();
+    }
+    [Pure]
+    public static bool Many<T>(this IEnumerable<T> items) {
+        Contract.Requires(items != null);
+        using (var e = items.GetEnumerator())
+            return e.MoveNext() && e.MoveNext();
+    }
+    [Pure]
+    public static bool IsSingle<T>(this IEnumerable<T> items) {
+        Contract.Requires(items != null);
+        using (var e = items.GetEnumerator())
+            return e.MoveNext() && !e.MoveNext();
+    }
+    [Pure]
+    public static IEnumerable<T> Duplicates<T>(this IEnumerable<T> items) {
+        Contract.Requires(items != null);
+        var set = new HashSet<T>();
+        foreach (var item in items)
+            if (!set.Add(item))
+                yield return item;
+    }
+    [Pure]
     public static IEnumerable<T> Rotate<T>(this IEnumerable<T> items, int offset) {
         return items.ToArray().Rotate(offset);
     }
+    [Pure]
     public static int ProperMod(this int value, int divisor) {
         Contract.Requires(divisor > 0);
         if (value < 0) return ProperMod(value % divisor + divisor, divisor);
         return value % divisor;
     }
+    [Pure]
     public static BigInteger ProperMod(this BigInteger value, BigInteger divisor) {
         Contract.Requires(divisor > 0);
         if (value < 0) return ProperMod(value % divisor + divisor, divisor);
         return value % divisor;
     }
+    [Pure]
     public static T[] Rotate<T>(this IList<T> items, int offset) {
         offset %= items.Count;
         return Enumerable.Range(0, items.Count)
                          .Select(i => items[(i - offset).ProperMod(items.Count)])
                          .ToArray();
     }
+    [Pure]
     public static T[] Shuffle<T>(this IEnumerable<T> items, ISecureRandomNumberGenerator rng) {
         var buffer = items.ToArray();
         for (int i = 0; i < buffer.Length - 1; i++) {

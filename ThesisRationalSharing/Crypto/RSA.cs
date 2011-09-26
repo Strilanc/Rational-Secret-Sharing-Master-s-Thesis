@@ -37,7 +37,7 @@ public class RSA : IPublicKeyCryptoScheme<RSA.Key, RSA.Key, BigInteger> {
         }
     }
 
-    public Tuple<Key, Key> GenerateKeyPair(ISecureRandomNumberGenerator rng) {
+    public Tuple<Key, Key> GeneratePublicPrivateKeyPair(ISecureRandomNumberGenerator rng) {
         BigInteger g = 3;
         BigInteger m = 993;
         BigInteger x = rng.GenerateNextValueMod(m - 1) + 1;

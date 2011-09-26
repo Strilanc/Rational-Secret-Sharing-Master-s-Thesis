@@ -191,15 +191,15 @@ public struct ModIntPolynomial : IEquatable<ModIntPolynomial> {
 
     public static ModIntPolynomial FromInterpolation(IEnumerable<Tuple<BigInteger, BigInteger>> coords, BigInteger modulus) {
         Contract.Requires(coords != null);
-        Contract.Requires(coords.Select(e => e.Item1).Distinct().Count() == coords.Count());
+        Contract.Requires(coords.Select(e => e.Item1).Duplicates().None());
         Contract.Ensures(coords.All(e => Contract.Result<ModIntPolynomial>().EvaluateAt(e.Item1) == e.Item2));
         return FromInterpolation(coords.Select(e => Tuple.Create(ModInt.From(e.Item1, modulus), ModInt.From(e.Item2, modulus))).ToArray(), modulus);
     }
     public static ModIntPolynomial FromInterpolation(IEnumerable<Tuple<ModInt, ModInt>> coords, BigInteger modulus) {
         Contract.Requires(coords != null);
-        Contract.Requires(coords.Select(e => e.Item1).Distinct().Count() == coords.Count());
-        Contract.Ensures(coords.All(e => e.Item1.Modulus == modulus));
-        Contract.Ensures(coords.All(e => e.Item2.Modulus == modulus));
+        Contract.Requires(coords.Select(e => e.Item1).Duplicates().None());
+        Contract.Requires(coords.All(e => e.Item1.Modulus == modulus));
+        Contract.Requires(coords.All(e => e.Item2.Modulus == modulus));
         Contract.Ensures(coords.All(e => Contract.Result<ModIntPolynomial>().EvaluateAt(e.Item1) == e.Item2));
 
         var U = From(new[] {BigInteger.One}, modulus);

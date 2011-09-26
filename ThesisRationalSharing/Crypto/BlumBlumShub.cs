@@ -14,7 +14,7 @@ public class BlumBlumbShub : ISecureRandomNumberGenerator {
     public BlumBlumbShub(BigInteger modulus, BigInteger seed) {
         Contract.Requires(1 < seed);
         Contract.Requires(seed < modulus);
-        Contract.Requires<ArgumentException>(BigInteger.GreatestCommonDivisor(modulus, seed) == 1);
+        if (BigInteger.GreatestCommonDivisor(modulus, seed) != 1) throw new ArgumentException("Common factor");
         this._state = new ModInt(seed, modulus);
     }
 

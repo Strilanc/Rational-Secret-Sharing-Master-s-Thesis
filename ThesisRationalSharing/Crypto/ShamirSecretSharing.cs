@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 
-public class ShamirSecretSharing : ISharingScheme<ShamirSecretSharing.Share> {
+public class ShamirSecretSharing : ISecretSharingScheme<ShamirSecretSharing.Share> {
     public readonly BigInteger Modulus;
 
     public ShamirSecretSharing(BigInteger modulus) {
@@ -68,8 +68,8 @@ public class ShamirSecretSharing : ISharingScheme<ShamirSecretSharing.Share> {
     public static ModIntPolynomial InterpolatePoly(IList<Share> shares) {
         Contract.Requires(shares != null);
         Contract.Requires(shares.Any());
-        Contract.Requires(shares.All(e => e.Modulus == shares.First().Modulus));
-        Contract.Requires(shares.Select(e => e.X).Distinct().Count() == shares.Count);
+        Contract.Requires(shares.Select(e => e.Modulus).Distinct().IsSingle());
+        Contract.Requires(shares.Select(e => e.X).Duplicates().None());
         return ModIntPolynomial.FromInterpolation(shares.Select(e => Tuple.Create(e.X.Value, e.Y.Value)).ToArray(), shares.First().Modulus);
     }
 }
