@@ -5,14 +5,14 @@ using System.Text;
 using System.Numerics;
 using System.Diagnostics.Contracts;
 
-public class SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> : ISharingScheme<SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>.Share> {
-    public readonly ISharingScheme<TWrappedShare> wrappedSharingScheme;
+public class SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> : ISecretSharingScheme<SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>.Share> {
+    public readonly ISecretSharingScheme<TWrappedShare> wrappedSharingScheme;
     public readonly IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme;
     public readonly IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme;
     public readonly IMixingScheme<BigInteger, BigInteger> roundNonceMixingScheme;
 
     public SyncedProtocol(
-            ISharingScheme<TWrappedShare> wrappedSharingScheme, 
+            ISecretSharingScheme<TWrappedShare> wrappedSharingScheme, 
             IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme,
             IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme,
             IMixingScheme<BigInteger, BigInteger> roundNonceMixingScheme) {
@@ -29,7 +29,7 @@ public class SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPriva
     public Share[] Create(BigInteger secret, int threshold, int total, ISecureRandomNumberGenerator rng) {
         var nonce = rng.GenerateNextValueMod(BigInteger.One << 128);
         var targetRound = rng.GenerateNextValuePoisson(5, 6);
-        var keys = Enumerable.Range(0, total).Select(e => publicCryptoScheme.GenerateKeyPair(rng)).ToArray();
+        var keys = Enumerable.Range(0, total).Select(e => publicCryptoScheme.GeneratePublicPrivateKeyPair(rng)).ToArray();
         var targetRoundMessages = keys.Select(e => publicCryptoScheme.PrivateEncrypt(e.Item2, roundNonceMixingScheme.Mix(targetRound, nonce)));
         var wrappedShares = wrappedSharingScheme.Create(secret, threshold, total, rng);
         var shareMasks = targetRoundMessages.Zip(wrappedShares, (msg, shr) => shareMixingScheme.Mix(shr, msg)).ToArray();

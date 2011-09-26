@@ -3,33 +3,46 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Numerics;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
-public static class AsyncNetwork<TParticipant, TMessage> {
-    public interface IActor {
-        void Init(IEnumerable<TParticipant> players);
-        Dictionary<TParticipant, TMessage> GetRoundMessages(int round);
-        void ReceiveMessage(int round, TParticipant sender, TMessage message);
-        EndRoundResult EndRound(int round);
+public static class AsyncNetwork {
+    public static Dictionary<TActor, BigInteger> Run<TParticipant, TActor, TMessage>(int syncLimit, IEnumerable<TActor> roundActors)
+        where TActor : TParticipant, IActor<TParticipant, TMessage> {
+        return AsyncNetwork<TParticipant, TActor, TMessage>.Run(syncLimit, roundActors);
     }
-
-    public static Dictionary<T, BigInteger> Run<T>(IEnumerable<T> roundActors, ISecureRandomNumberGenerator rng) where T : IActor, TParticipant {
+}
+public interface IActor<TParticipant, TMessage> {
+    void Init(IEnumerable<TParticipant> players);
+    Dictionary<TParticipant, TMessage> StartRound(int round);
+    EndRoundResult EndRound(int round, Dictionary<TParticipant, TMessage> receivedMessages);
+}
+public interface IActorPlayer<TMessage> : IPlayer, IActor<IPlayer, TMessage> {
+}
+public static class AsyncNetwork<TParticipant, TActor, TMessage> where TActor : TParticipant, IActor<TParticipant, TMessage> {
+    public static Dictionary<TActor, BigInteger> Run(int syncLimit, IEnumerable<TActor> actors) {
         int round = 0;
-        var result = new Dictionary<T, BigInteger>();
-        foreach (var a in roundActors)
-            a.Init(roundActors.Cast<TParticipant>());
-        var activeActors = new HashSet<T>(roundActors);
-        while (activeActors.Except(result.Keys).Any()) {
-            foreach (var sender in activeActors.Shuffle(rng)) {
-                var messages = sender.GetRoundMessages(round);
-                foreach (var receiver in activeActors.Where(e => messages.ContainsKey(e))) {
-                    receiver.ReceiveMessage(round, sender, messages[receiver]);
+        var result = new Dictionary<TActor, BigInteger>();
+        foreach (var a in actors)
+            a.Init(actors.Cast<TParticipant>());
+        var active = new HashSet<TActor>(actors);
+        while (active.Except(result.Keys).Any()) {
+            int sendCount = 0;
+            var pendingMessages = active.ToDictionary(e => (TParticipant)e, e => new Dictionary<TParticipant, TMessage>());
+            foreach (var sender in active) {
+                var messages = sender.StartRound(round);
+                if (messages != null && messages.Count > 0) {
+                    sendCount += 1;
+                    foreach (var receiver in messages.Keys.Intersect(active.Cast<TParticipant>())) 
+                        pendingMessages[receiver][sender] = messages[receiver];
                 }
             }
-            
-            foreach (var actor in activeActors.ToArray()) {
-                var r = actor.EndRound(round);
-                if (r.Finished) activeActors.Remove(actor);
-                if (r.OptionalResult.HasValue) result[actor] = r.OptionalResult.Value;
+            if (sendCount > syncLimit) throw new InvalidOperationException("Exceeded sync limit");
+
+            foreach (var receiver in active.ToArray()) {
+                var r = receiver.EndRound(round, pendingMessages[receiver]);
+                if (r.Finished) active.Remove(receiver);
+                if (r.OptionalResult.HasValue) result[receiver] = r.OptionalResult.Value;
             }
 
             round += 1;

@@ -72,6 +72,7 @@
     <Compile Include="Crypto\IPublicKeyCryptoScheme.cs" />
     <Compile Include="Crypto\ICommitment.cs" />
     <Compile Include="Crypto\ISecureRandomNumberGenerator.cs" />
+    <Compile Include="Protocols\MessageSequence.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Protocols\AsyncVerified.cs" />
     <Compile Include="Crypto\BlumBlumShub.cs" />

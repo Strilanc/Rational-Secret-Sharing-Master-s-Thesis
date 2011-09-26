@@ -6,14 +6,31 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 
-public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> : ISharingScheme<AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>.Share> {
-    public readonly ISharingScheme<TWrappedShare> wrappedSharingScheme;
+public class AsyncVerifiedProtocol {
+    public static AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> From<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>(
+            ISecretSharingScheme<TWrappedShare> wrappedSharingScheme,
+            IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme,
+            IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme,
+            IMixingScheme<BigInteger, BigInteger> roundNonceMixingScheme) {
+        Contract.Requires(wrappedSharingScheme != null);
+        Contract.Requires(publicCryptoScheme != null);
+        Contract.Requires(shareMixingScheme != null);
+        Contract.Requires(roundNonceMixingScheme != null);
+        return new AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>(wrappedSharingScheme, publicCryptoScheme, shareMixingScheme, roundNonceMixingScheme);
+    }
+}
+public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> : ISecretSharingScheme<AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey>.Share> {
+    public readonly ISecretSharingScheme<TWrappedShare> wrappedSharingScheme;
     public readonly IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme;
     public readonly IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme;
     public readonly IMixingScheme<BigInteger, BigInteger> roundNonceMixingScheme;
 
+    /// <param name="wrappedSharingScheme">Underlying augmented sharing scheme.</param>
+    /// <param name="publicCryptoScheme">Encrypts deterministic base round messages.</param>
+    /// <param name="shareMixingScheme">Used to reversibly mask true shares using round messages.</param>
+    /// <param name="roundNonceMixingScheme">Scrambles the round using a nonce. Output must match input for publicCryptoScheme encryption.</param>
     public AsyncVerifiedProtocol(
-            ISharingScheme<TWrappedShare> wrappedSharingScheme, 
+            ISecretSharingScheme<TWrappedShare> wrappedSharingScheme, 
             IPublicKeyCryptoScheme<TPublicKey, TPrivateKey, TEncryptedMessage> publicCryptoScheme,
             IReversibleMixingScheme<TWrappedShare, TEncryptedMessage> shareMixingScheme,
             IMixingScheme<BigInteger, BigInteger> roundNonceMixingScheme) {
@@ -30,7 +47,7 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
     public Share[] Create(BigInteger secret, int threshold, int total, ISecureRandomNumberGenerator rng) {
         var nonce = rng.GenerateNextValueMod(BigInteger.One << 128);
         var targetRound = rng.GenerateNextValuePoisson(5, 6);
-        var keys = Enumerable.Range(0, total).Select(e => publicCryptoScheme.GenerateKeyPair(rng)).ToArray();
+        var keys = Enumerable.Range(0, total).Select(e => publicCryptoScheme.GeneratePublicPrivateKeyPair(rng)).ToArray();
         var common = new CommonShare(
             nonce: nonce, 
             publicKeys: keys.Select(e => e.Item1).ToArray(), 
@@ -39,20 +56,18 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
             total: total);
 
         var firstLearnerIndex = (targetRound + threshold - 2) % total;
-        return keys.Select((e, i) => {
-            var firstUnmaskingRound = targetRound + (i - firstLearnerIndex).ProperMod(total);
+        return keys.Select((k, i) => {
+            var firstUnmaskingRound = (int)(targetRound + (i - firstLearnerIndex).ProperMod(total));
             var wrappedShares = wrappedSharingScheme.Create(secret, threshold, total, rng);
-            var x1 = from round in Enumerable.Range((int)firstUnmaskingRound, total)
-                     let senderId = round % total
-                     let senderKey = keys[senderId].Item2
-                     let baseMessage = roundNonceMixingScheme.Mix(round, nonce)
-                     let encryptedMessage = publicCryptoScheme.PrivateEncrypt(senderKey, baseMessage)
-                     let wrappedShare = wrappedShares[senderId]
-                     let maskedShare = shareMixingScheme.Mix(wrappedShare, encryptedMessage)
-                     select new { round = round, senderId = senderId, senderKey = senderKey, baseMessage = baseMessage, encryptedMessage = encryptedMessage, wrappedShare = wrappedShare, maskedShare = maskedShare };
-            var x2 = x1.ToArray();
-            var shareMasks = x1.Select(x => x.maskedShare).Rotate((int)firstUnmaskingRound).ToArray();
-            return new Share(e.Item2, shareMasks, common, i);
+            var shareMasks = from round in Enumerable.Range(firstUnmaskingRound, total)
+                             let senderId = round % total
+                             let senderKey = keys[senderId].Item2
+                             let baseMessage = roundNonceMixingScheme.Mix(round, nonce)
+                             let encryptedMessage = publicCryptoScheme.PrivateEncrypt(senderKey, baseMessage)
+                             let wrappedShare = wrappedShares[senderId]
+                             select shareMixingScheme.Mix(wrappedShare, encryptedMessage);
+            var alignedShareMasks = shareMasks.Rotate(firstUnmaskingRound).ToArray();
+            return new Share(k.Item2, alignedShareMasks, common, i);
         }).ToArray();
     }
 
@@ -99,27 +114,31 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
         }
     }
 
-
     public BigInteger Combine(int degree, IList<Share> shares) {
-        Contract.Requires<ArgumentException>(shares.GroupBy(e => e.Common).Count() == 1);
-        Contract.Requires<ArgumentException>(degree == shares.First().Common.Threshold);
-        var dares = shares.ToDictionary(e => e.CommonIndex, e => e);
-        var s = shares.First();
-        var total = s.Common.Total;
+        if (shares.GroupBy(e => e.Common).Count() > 1) throw new ArgumentException("Unrelated shares.");
+        if (degree != shares.First().Common.Threshold) throw new ArgumentException("Shares of different degree.");
+
+        var shareMap = shares.ToDictionary(e => e.CommonIndex, e => e);
+        var usedShare = shares.First();
+        var total = usedShare.Common.Total;
+        var wrappedShareQueue = new Queue<TWrappedShare>();
+
         int round = 0;
-        var q = new Queue<TWrappedShare>();
         while (true) {
             var i = round % total;
-            if (!dares.ContainsKey(i)) continue;
+            if (!shareMap.ContainsKey(i)) {
+                round += 1;
+                continue;
+            }
             
-            var msg = GetRoundMessage(round, dares[i]);
-            var msk = s.Masks[i];
+            var msg = GetRoundMessage(round, shareMap[i]);
+            var msk = usedShare.Masks[i];
             var shr = shareMixingScheme.Unmix(msk, msg);
-            q.Enqueue(shr);
+            wrappedShareQueue.Enqueue(shr);
             
-            if (q.Count > degree) q.Dequeue();
-            var n = wrappedSharingScheme.TryCombine(degree, q.ToArray());
-            if (n.HasValue && s.Common.Commitment.Matches(n.Value)) return n.Value;
+            if (wrappedShareQueue.Count > degree) wrappedShareQueue.Dequeue();
+            var secret = wrappedSharingScheme.TryCombine(degree, wrappedShareQueue.ToArray());
+            if (secret.HasValue && usedShare.Common.Commitment.Matches(secret.Value)) return secret.Value;
 
             round += 1;
         }
@@ -128,70 +147,192 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
         return Combine(degree, shares);
     }
 
+    public RationalCoalition MakeRationalCoalition(IEnumerable<Share> shares) {
+        return new RationalCoalition(this, shares.ToArray());
+    }
     [DebuggerDisplay("{ToString()}")]
-    public class RationalPlayer : IPlayer, AsyncNetwork<IPlayer, TEncryptedMessage>.IActor {
+    public class RationalCoalition : IActorPlayer<TEncryptedMessage> {
+        private readonly Share[] shares;
+        private readonly HonestPlayer[] playas;
+        private BigInteger? secret = null;
+        public readonly AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme;
+
+        private Share ExposedShare { get { return shares.First(); } }
+        private IEnumerable<Share> HiddenShares { get { return shares.Skip(1); } }
+        public IEnumerable<IActorPlayer<TEncryptedMessage>> GetPlayers() {
+            return new IActorPlayer<TEncryptedMessage>[] { this }.Concat(HiddenShares.Select(e => new SilentPlayer(e.CommonIndex)));
+        }
+
+        public RationalCoalition(AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme, Share[] shares) {
+            Contract.Requires(scheme != null);
+            Contract.Requires(shares != null);
+            Contract.Requires(shares.Length >= 1);
+            Contract.Requires(shares.Select(e => e.Common).Distinct().IsSingle());
+            Contract.Requires(shares.Select(e => e.CommonIndex).Duplicates().None());
+            this.shares = shares;
+            var c = shares.First().Common;
+            if (shares.Length >= c.Threshold) {
+                this.secret = scheme.Combine(c.Threshold, shares);
+            }
+            this.playas = shares.Select(e => new HonestPlayer(scheme, e)).ToArray();
+        }
+
+        private void TrySneakRound(int round) {
+            if (secret.HasValue) return;
+            var p = playas.FirstOrDefault(e => e.Index == round % e.share.Common.Total);
+            if (p == null) return;
+            var msg = new Dictionary<IPlayer, TEncryptedMessage>() { 
+                { p,  scheme.GetRoundMessage(round, p.share) } 
+            };
+            for (int i = 0; i < shares.Length; i++) {
+                secret = playas[i].EndRound(round, msg).OptionalResult;
+                if (secret.HasValue) return;
+            }
+        }
+
+        public void Init(IEnumerable<IPlayer> players) {
+            foreach (var h in playas)
+                h.Init(players);
+        }
+        public Dictionary<IPlayer, TEncryptedMessage> StartRound(int round) {
+            for (int i = 0; i < ExposedShare.Common.Total; i++)
+                TrySneakRound(i + round);
+            if (secret.HasValue) return new Dictionary<IPlayer, TEncryptedMessage>();
+            return playas.First().StartRound(round);
+        }
+        public EndRoundResult EndRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
+            var isFinished = false;
+            if (!playas.Any(e => e.share.CommonIndex == round)) {
+                isFinished = true;
+                foreach (var p in playas) {
+                    var e = p.EndRound(round, receivedMessages);
+                    isFinished &= e.Finished;
+                    secret = secret ?? e.OptionalResult;
+                }
+            }
+            if (secret.HasValue) return new EndRoundResult(finished: true, optionalResult: secret);
+            return new EndRoundResult(finished: isFinished);
+        }
+
+        public int Index {
+            get {
+                return ExposedShare.CommonIndex;
+            }
+        }
+
+        public override string ToString() {
+            return "Rational Coalition: " + String.Join(", ", shares.Select(e => e.CommonIndex));
+        }
+    }
+    [DebuggerDisplay("{ToString()}")]
+    public class SilentPlayer : IActorPlayer<TEncryptedMessage> {
+        public SilentPlayer(int index) { this.Index = index; }
+
+        public int Index { get; private set; }
+        public void Init(IEnumerable<IPlayer> players) {
+        }
+        public Dictionary<IPlayer, TEncryptedMessage> StartRound(int round) {
+            return new Dictionary<IPlayer, TEncryptedMessage>();
+        }
+        public EndRoundResult EndRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
+            return new EndRoundResult(finished: true);
+        }
+
+        public override string ToString() {
+            return "SilentPlayer (ID: " + Index + ")";
+        }
+    }
+    public RationalPlayer MakeRationalPlayer(Share share) {
+        return new RationalPlayer(new HonestPlayer(this, share));
+    }
+    [DebuggerDisplay("{ToString()}")]
+    public class RationalPlayer : IActorPlayer<TEncryptedMessage> {
+        private readonly HonestPlayer h;
+
+        public RationalPlayer(HonestPlayer h) {
+            Contract.Requires(h != null);
+            this.h = h;
+        }
+
+        public int Index { get { return h.Index; } }
+        public void Init(IEnumerable<IPlayer> players) {
+            h.Init(players);
+        }
+        public Dictionary<IPlayer, TEncryptedMessage> StartRound(int round) {
+ 	        return h.StartRound(round);
+        }
+        public EndRoundResult EndRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
+ 	        var e = h.EndRound(round, receivedMessages);
+            if (e.OptionalResult.HasValue) return new EndRoundResult(finished: true, optionalResult: e.OptionalResult);
+            return e;
+        }
+
+        public override string ToString() {
+            return String.Format("Rational Player (Id: {0})", Index);
+        }
+}
+    public class HonestPlayer : IActorPlayer<TEncryptedMessage> {
         public int Index { get { return share.CommonIndex; } }
-
+        private readonly MessageSequence<TWrappedShare> ms;
         public readonly Share share;
-        private HashSet<IPlayer> cooperatingPlayers = null;
-        private readonly Queue<TWrappedShare> lastReceivedShares = new Queue<TWrappedShare>();
         private readonly AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme;
-        private Tuple<TEncryptedMessage> roundMessage = null;
+        private HashSet<IPlayer> cooperatingPlayers = null;
+        public BigInteger? Secret { get; private set; }
 
-        public RationalPlayer(
+
+        public HonestPlayer(
                 AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
                 Share share) {
             this.scheme = scheme;
             this.share = share;
+            this.ms = new MessageSequence<TWrappedShare>(
+                scheme.wrappedSharingScheme,
+                share.Common.Commitment,
+                share.Common.Threshold,
+                share.Common.Total);
         }
 
         public void Init(IEnumerable<IPlayer> players) {
             cooperatingPlayers = new HashSet<IPlayer>(players);
         }
-
-        public Dictionary<IPlayer, TEncryptedMessage> GetRoundMessages(int round) {
+        public Dictionary<IPlayer, TEncryptedMessage> StartRound(int round) {
             if (round % share.Common.Total != share.CommonIndex)
                 return new Dictionary<IPlayer, TEncryptedMessage>(); // not our turn to send
             return cooperatingPlayers.ToDictionary(e => e, e => scheme.GetRoundMessage(round, share));
         }
+        public EndRoundResult EndRound(int round, Dictionary<IPlayer, TEncryptedMessage> receivedMessages) {
+            if (Secret.HasValue) return new EndRoundResult(optionalResult: Secret);
 
-        public EndRoundResult EndRound(int round) {
-            Contract.Ensures(!Contract.Result<EndRoundResult>().OptionalResult.HasValue || Contract.Result<EndRoundResult>().Finished);
-
-            try {
-                var sender = cooperatingPlayers.Where(e => e.Index == round % share.Common.Total).FirstOrDefault();
-                if (sender == null) return new EndRoundResult();
-
-                if (roundMessage == null) {
-                    cooperatingPlayers.Remove(sender);
-                    return new EndRoundResult(cooperatingPlayers.Count < share.Common.Threshold);
-                }
-
-                var mask = share.Masks[sender.Index];
-                var ms = scheme.shareMixingScheme.Unmix(mask, roundMessage.Item1);
-                lastReceivedShares.Enqueue(ms);
-                if (lastReceivedShares.Count > share.Common.Threshold) lastReceivedShares.Dequeue();
-
-                var potentialSecret = scheme.wrappedSharingScheme.TryCombine(share.Common.Threshold, lastReceivedShares.ToArray());
-                if (potentialSecret == null || !share.Common.Commitment.Matches(potentialSecret.Value))
-                    return new EndRoundResult();
-                
-                return new EndRoundResult(finished: true, optionalResult: potentialSecret);
-            } finally {
-                roundMessage = null;
+            var expectedSenderIndex = round % share.Common.Total;
+            var unexpecteds = receivedMessages.Keys.Where(e => e.Index != expectedSenderIndex);
+            foreach (var unexpected in receivedMessages.Keys.Where(e => e.Index != expectedSenderIndex))
+                cooperatingPlayers.Remove(unexpected);
+            
+            var expectedKey = receivedMessages.Keys.Where(e => e.Index == expectedSenderIndex).FirstOrDefault();
+            if (expectedKey == null || !cooperatingPlayers.Contains(expectedKey)) {
+                cooperatingPlayers.RemoveWhere(e => e.Index == expectedSenderIndex);
+                return new EndRoundResult(finished: cooperatingPlayers.Count < share.Common.Threshold);
             }
-        }
-        public void ReceiveMessage(int round, IPlayer sender, TEncryptedMessage message) {
-            if (!cooperatingPlayers.Contains(sender)
-                    || sender.Index != round % share.Common.Total
-                    || !scheme.IsMessageValid(round, share.Common.Nonce, share.Common.PublicKeys[sender.Index], message)) {
-                cooperatingPlayers.Remove(sender);
-            } else {
-                roundMessage = Tuple.Create(message);
+            
+            var message = receivedMessages[expectedKey];
+            if (!scheme.IsMessageValid(round, share.Common.Nonce, share.Common.PublicKeys[expectedSenderIndex], message)) {
+                cooperatingPlayers.Remove(expectedKey);
+                return new EndRoundResult(finished: cooperatingPlayers.Count < share.Common.Threshold);
             }
+            var mask = share.Masks[expectedSenderIndex];
+            var shr = scheme.shareMixingScheme.Unmix(mask, message);
+            
+            var potentialSecret = ms.Process(round, shr);
+            if (potentialSecret.HasValue  && share.Common.Commitment.Matches(potentialSecret.Value)) {
+                this.Secret = potentialSecret;
+                return new EndRoundResult(optionalResult: potentialSecret);
+            }
+
+            return new EndRoundResult();
         }
+
         public override string ToString() {
-            return String.Format("Id: {0}", Index);
+            return String.Format("Honest Player (Id: {0})", Index);
         }
     }
 }
