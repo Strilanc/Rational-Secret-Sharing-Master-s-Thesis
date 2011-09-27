@@ -45,8 +45,12 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
     }
 
     public Share[] Create(BigInteger secret, int threshold, int total, ISecureRandomNumberGenerator rng) {
+        var targetRound = rng.GenerateNextValueMod(total) + rng.GenerateNextValuePoisson(new Rational(5, 6));
+        return Create(secret, threshold, total, rng, targetRound);
+    }
+    public Share[] Create(BigInteger secret, int threshold, int total, ISecureRandomNumberGenerator rng, BigInteger targetRound) {
+        Contract.Requires(targetRound >= 0);
         var nonce = rng.GenerateNextValueMod(BigInteger.One << 128);
-        var targetRound = rng.GenerateNextValuePoisson(5, 6);
         var keys = Enumerable.Range(0, total).Select(e => publicCryptoScheme.GeneratePublicPrivateKeyPair(rng)).ToArray();
         var common = new CommonShare(
             nonce: nonce, 
@@ -291,13 +295,13 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
 }
     [DebuggerDisplay("{ToString()}")]
     public class HonestPlayer : IActorPlayer<TEncryptedMessage> {
-        public readonly ShareFa Brain;
+        public readonly ShareCombiner Brain;
         private HashSet<IPlayer> cooperatingPlayers = null;
 
         public HonestPlayer(
                 AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
                 Share share) {
-            this.Brain = new ShareFa(scheme, share);
+            this.Brain = new ShareCombiner(scheme, share);
         }
 
         public BigInteger? Secret { get { return Brain.Secret; } }
@@ -329,12 +333,12 @@ public class AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey,
             return String.Format("Honest Player: {0}", Index);
         }
     }
-    public class ShareFa {
+    public class ShareCombiner {
         public readonly Share Share;
         public readonly AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> Scheme;
         private readonly MessageSequence<TWrappedShare> reconstructor;
 
-        public ShareFa(
+        public ShareCombiner(
                 AsyncVerifiedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPrivateKey> scheme,
                 Share share) {
             this.Scheme = scheme;

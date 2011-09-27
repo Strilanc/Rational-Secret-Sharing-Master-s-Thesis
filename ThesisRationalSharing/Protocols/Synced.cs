@@ -28,7 +28,7 @@ public class SyncedProtocol<TWrappedShare, TEncryptedMessage, TPublicKey, TPriva
 
     public Share[] Create(BigInteger secret, int threshold, int total, ISecureRandomNumberGenerator rng) {
         var nonce = rng.GenerateNextValueMod(BigInteger.One << 128);
-        var targetRound = rng.GenerateNextValuePoisson(5, 6);
+        var targetRound = rng.GenerateNextValuePoisson(new Rational(5, 6));
         var keys = Enumerable.Range(0, total).Select(e => publicCryptoScheme.GeneratePublicPrivateKeyPair(rng)).ToArray();
         var targetRoundMessages = keys.Select(e => publicCryptoScheme.PrivateEncrypt(e.Item2, roundNonceMixingScheme.Mix(targetRound, nonce)));
         var wrappedShares = wrappedSharingScheme.Create(secret, threshold, total, rng);

@@ -14,12 +14,7 @@ public class ShamirSecretSharing : ISecretSharingScheme<ShamirSecretSharing.Shar
     }
 
     private IEnumerable<Share> GenerateShares(BigInteger secret, int threshold, ISecureRandomNumberGenerator r) {
-        var coefficients = new BigInteger[threshold];
-        coefficients[0] = secret;
-        for (int i = 1; i < threshold; i++) {
-            coefficients[i] = r.GenerateNextValueMod(Modulus);
-        }
-        var poly = ModIntPolynomial.From(coefficients, Modulus);
+        var poly = r.GenerateNextModIntPolynomial(Modulus, degree: threshold - 1, specifiedZero: secret);
 
         for (var i = BigInteger.One; i < Modulus; i++) {
             var x = new ModInt(i, Modulus);

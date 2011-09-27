@@ -5,9 +5,10 @@ using System.Text;
 using System.Numerics;
 using System.Diagnostics.Contracts;
 
-/** Generates secure random numbers on demand. */
+/** Generates computationally secure random numbers on demand. */
 [ContractClass(typeof(ContractClassForISecureRandomNumberGenerator))]
 public interface ISecureRandomNumberGenerator {
+    ///<summary>Generates a uniformly distributed value in the range [0, strictCeiling).</summary>
     BigInteger GenerateNextValueMod(BigInteger strictCeiling);
 }
 

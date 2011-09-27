@@ -89,5 +89,21 @@ namespace ThesisRationalSharingTest {
                 Assert.IsTrue(playerRunSecrets.Values.All(e => e == secret));
             }
         }
+        [TestMethod()]
+        public void TryAsyncNoCryptoShare() {
+            var modulus = 1009;
+            var randomNumberGenerator = new BlumBlumbShub(modulus: 997 * 991, seed: 4);
+            var threshold = 2;
+            var total = 3;
+
+            var scheme = new AsyncNoCrypto(modulus);
+            for (int secret = 0; secret < 5; secret++) {
+                var shares = scheme.Create(secret, threshold, total, randomNumberGenerator);
+                for (int s = threshold; s < total; s++) {
+                    var combinedSecret = scheme.Combine(threshold, shares.Shuffle(randomNumberGenerator).Take(s).ToArray());
+                    Assert.IsTrue(combinedSecret == secret);
+                }
+            }
+        }
     }
 }

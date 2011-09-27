@@ -64,11 +64,30 @@ public static class Util {
         }
         return buffer;
     }
-    public static BigInteger GenerateNextValuePoisson(this ISecureRandomNumberGenerator rng, BigInteger chanceContinueNumerator, BigInteger chanceContinueDenominator) {
+    public static bool GenerateNextChance(this ISecureRandomNumberGenerator rng, Rational probability) {
+        Contract.Requires(rng != null);
+        Contract.Requires(probability >= 0);
+        Contract.Requires(probability <= 1);
+        if (probability == 0) return false;
+        return rng.GenerateNextValueMod(probability.Denominator) <= rng.GenerateNextValueMod(probability.Numerator);
+    }
+    public static BigInteger GenerateNextValuePoisson(this ISecureRandomNumberGenerator rng, Rational chanceContinue) {
+        Contract.Requires(rng != null);
         BigInteger result = 0;
-        while (rng.GenerateNextValueMod(chanceContinueDenominator) < chanceContinueNumerator)
+        while (rng.GenerateNextChance(chanceContinue))
             result += 1;
         return result;
+    }
+    public static ModIntPolynomial GenerateNextModIntPolynomial(this ISecureRandomNumberGenerator rng, BigInteger modulus, int degree, BigInteger? specifiedZero = null) {
+        Contract.Requires(rng != null);
+        Contract.Requires(modulus > 0);
+        Contract.Requires(degree >= 0);
+        Contract.Requires(specifiedZero == null || specifiedZero.Value < modulus);
+        var coefficients = new BigInteger[degree + 1];
+        for (int i = 0; i < degree; i++) {
+            coefficients[i] = i == 0 && specifiedZero.HasValue ? specifiedZero.Value : rng.GenerateNextValueMod(modulus);
+        }
+        return ModIntPolynomial.From(coefficients, modulus);
     }
 }
 
