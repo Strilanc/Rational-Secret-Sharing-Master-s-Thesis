@@ -52,7 +52,7 @@ public class BlumBlumbShub : ISecureRandomNumberGenerator {
         while (strictCeiling >= BigInteger.One << power)
             power += 1;
 
-        // generate a power of 2 until it lands within the uniform range
+        // generate below a power of 2 until it lands within the uniform range
         var c = BigInteger.One << power;
         var m = c - c % strictCeiling;
         while (true) {

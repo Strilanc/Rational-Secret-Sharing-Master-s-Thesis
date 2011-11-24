@@ -7,6 +7,52 @@ using System.Diagnostics.Contracts;
 
 public static class Util {
     [Pure]
+    public static IEnumerable<T> DistinctBy<T, K>(this IEnumerable<T> items, Func<T, K> projection) {
+        var h = new HashSet<K>();
+        foreach (var item in items)
+            if (h.Add(projection(item))) 
+                yield return item;
+    }
+    public static BigInteger GenerateNextValuePrimeBelow(this ISecureRandomNumberGenerator rng, BigInteger ceiling) {
+        while (true) {
+            var p = rng.GenerateNextValueMod(ceiling);
+            if (p.IsLikelyPrime(rng)) return p;
+        }
+    }
+    [Pure]
+    public static bool IsLikelyPrime(this BigInteger n, ISecureRandomNumberGenerator rng) {
+        //Special cases
+        if (n <= 1) return false;
+        if (n <= 3) return true;
+        if (n.IsEven) return false;
+
+        //Trial divisions to avoid using entropy
+        for (int i = 5; i < 25; i += 2)
+            if (n % i == 0) return false;
+
+        //Miller-Rabin
+        const int repetitions = 100;
+        var d = n - 1;
+        var s = 0;
+        while (d.IsEven ) {
+            d >>= 1;
+            s += 1;
+        }
+        for (int i = 0; i < repetitions; i++) {
+            var a = rng.GenerateNextValueMod(n - 4) + 2;
+            var x = (a*d) % n;
+            if (x == 1 || x == n - 1) continue;
+            for (var r = 1; r < s; r++) {
+                x *= x;
+                x %= n;
+                if (x == 1) return false;
+                if (x == n - 1) break;
+            }
+        }
+        return true;
+    }
+
+    [Pure]
     public static bool None<T>(this IEnumerable<T> items) {
         return !items.Any();
     }
@@ -89,22 +135,16 @@ public static class Util {
         }
         return ModIntPolynomial.From(coefficients, modulus);
     }
-}
-
-public class ShamirMixer : IReversibleMixingScheme<ShamirSecretSharing.Share, BigInteger> {
-    public ShamirSecretSharing.Share Mix(ShamirSecretSharing.Share share, BigInteger offset) {
-        return new ShamirSecretSharing.Share(share.X, share.Y + offset);
+    public static ModInt Sum(this IEnumerable<ModInt> sequence) {
+        return sequence.Aggregate((a, e) => a + e);
     }
-    public ShamirSecretSharing.Share Unmix(ShamirSecretSharing.Share mixedShare, BigInteger offset) {
-        return new ShamirSecretSharing.Share(mixedShare.X, mixedShare.Y - offset);
+    public static ModIntPolynomial Sum(this IEnumerable<ModIntPolynomial> sequence) {
+        return sequence.Aggregate((a, e) => a + e);
     }
-}
-public class ModMixer : IMixingScheme<BigInteger, BigInteger> {
-    public readonly BigInteger Modulus;
-    public ModMixer(BigInteger modulus) {
-        this.Modulus = modulus;
+    public static ModInt Product(this IEnumerable<ModInt> sequence) {
+        return sequence.Aggregate((a, e) => a * e);
     }
-    public BigInteger Mix(BigInteger value, BigInteger key) {
-        return (value + key) % Modulus;
+    public static ModIntPolynomial Product(this IEnumerable<ModIntPolynomial> sequence) {
+        return sequence.Aggregate((a, e) => a * e);
     }
 }

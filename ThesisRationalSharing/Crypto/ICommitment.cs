@@ -10,3 +10,6 @@ using System.Diagnostics.Contracts;
 public interface ICommitment {
     bool Matches(BigInteger value);
 }
+public interface ICommitmentScheme {
+    ICommitment Create(BigInteger value, ISecureRandomNumberGenerator rng);
+}

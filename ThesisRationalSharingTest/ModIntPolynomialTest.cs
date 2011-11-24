@@ -107,10 +107,11 @@ namespace ThesisRationalSharingTest {
         public void FromInterpolationTest() {
             var m = 103;
             var b = new ModInt(0, m);
-            var s1 = Tuple.Create(b + 1, b + 2);
-            var s2 = Tuple.Create(b + 2, b + 3);
-            var s3 = Tuple.Create(b + 3, b + 5);
-            var s4 = Tuple.Create(b + 4, b + 7);
+            var g = BigInteger.Zero;
+            var s1 = Tuple.Create(g + 1, g + 2);
+            var s2 = Tuple.Create(g + 2, g + 3);
+            var s3 = Tuple.Create(g + 3, g + 5);
+            var s4 = Tuple.Create(g + 4, g + 7);
             var s5 = Tuple.Create(b + 5, ModIntPolynomial.FromInterpolation(new[] { s1, s2, s3, s4 }, m).EvaluateAt(5));
             var s6 = Tuple.Create(b + 6, ModIntPolynomial.FromInterpolation(new[] { s1, s2, s3, s4 }, m).EvaluateAt(6));
 

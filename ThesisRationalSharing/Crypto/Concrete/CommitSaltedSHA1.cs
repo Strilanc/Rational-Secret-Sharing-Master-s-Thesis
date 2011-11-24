@@ -8,27 +8,27 @@ using System.Diagnostics.Contracts;
 
 ///<remarks>Example implementation only. Security vulnerabilities are present.</remarks>
 [DebuggerDisplay("{ToString()}")]
-public class HashCommitment : ICommitment {
+public class CommitSaltedSHA1 : ICommitment {
     private readonly byte[] _hash;
     private readonly byte[] _salt;
 
-    public HashCommitment(byte[] hash, byte[] salt) {
+    public CommitSaltedSHA1(byte[] hash, byte[] salt) {
         Contract.Requires(hash != null);
         Contract.Requires(salt != null);
         this._hash = hash;
         this._salt = salt;
     }
 
-    public static HashCommitment FromValueAndGeneratedSalt(BigInteger value, ISecureRandomNumberGenerator rng) {
+    public static CommitSaltedSHA1 FromValueAndGeneratedSalt(BigInteger value, ISecureRandomNumberGenerator rng) {
         Contract.Requires(rng != null);
-        Contract.Ensures(Contract.Result<HashCommitment>() != null);
+        Contract.Ensures(Contract.Result<CommitSaltedSHA1>() != null);
         var salt = rng.GenerateNextValueMod(BigInteger.One << 128).ToByteArray();
         return FromValueAndSalt(value, salt);
     }
-    public static HashCommitment FromValueAndSalt(BigInteger value, byte[] salt) {
+    public static CommitSaltedSHA1 FromValueAndSalt(BigInteger value, byte[] salt) {
         Contract.Requires(salt != null);
-        Contract.Ensures(Contract.Result<HashCommitment>() != null);
-        return new HashCommitment(SaltedHash(value, salt), salt);
+        Contract.Ensures(Contract.Result<CommitSaltedSHA1>() != null);
+        return new CommitSaltedSHA1(SaltedHash(value, salt), salt);
     }
 
     private static byte[] SaltedHash(BigInteger value, byte[] salt) {

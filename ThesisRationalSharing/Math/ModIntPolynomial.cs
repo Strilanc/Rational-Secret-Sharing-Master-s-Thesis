@@ -12,6 +12,11 @@ public struct ModIntPolynomial : IEquatable<ModIntPolynomial> {
     public readonly BigInteger Modulus;
     private readonly BigInteger[] Coefficients;
 
+    public IEnumerable<ModInt> GetCoefficients() {
+        var m = Modulus;
+        return Coefficients.Select(e => new ModInt(e, m)); 
+    }
+
     /** Creates a modular integer from the given reduced value and modulus. */
     public ModIntPolynomial(BigInteger[] coefficients, BigInteger modulus) {
         Contract.Requires(coefficients != null);
@@ -41,7 +46,7 @@ public struct ModIntPolynomial : IEquatable<ModIntPolynomial> {
 
     /** Creates a modular polynomial from the given coefficients and modulus, reducing the coefficients if necessary. */
     [Pure]
-    public static ModIntPolynomial From(IEnumerable<ModInt> coefficients, BigInteger modulus) {
+    public static ModIntPolynomial FromCoefficients(IEnumerable<ModInt> coefficients, BigInteger modulus) {
         Contract.Requires(modulus > 0);
         Contract.Requires(coefficients.All(e => e.Modulus == modulus));
         return ModIntPolynomial.From(coefficients.Select(e => e.Value), modulus);
@@ -96,11 +101,11 @@ public struct ModIntPolynomial : IEquatable<ModIntPolynomial> {
     }
     public static ModIntPolynomial operator *(ModIntPolynomial value, ModInt factor) {
         Contract.Requires(factor.Modulus == value.Modulus);
-        return From(value.Coefficients.Select(e => e * factor), value.Modulus);
+        return FromCoefficients(value.Coefficients.Select(e => e * factor), value.Modulus);
     }
     public static ModIntPolynomial operator *(ModInt factor, ModIntPolynomial value) {
         Contract.Requires(factor.Modulus == value.Modulus);
-        return From(value.Coefficients.Select(e => e * factor), value.Modulus);
+        return FromCoefficients(value.Coefficients.Select(e => e * factor), value.Modulus);
     }
     public static ModIntPolynomial operator <<(ModIntPolynomial value, int shift) {
         Contract.Requires(shift >= 0);
@@ -117,7 +122,7 @@ public struct ModIntPolynomial : IEquatable<ModIntPolynomial> {
             }
         }
 
-        return ModIntPolynomial.From(coefs, value1.Modulus);
+        return ModIntPolynomial.FromCoefficients(coefs, value1.Modulus);
     }
 
     public static bool operator ==(ModIntPolynomial value1, ModIntPolynomial value2) {
@@ -149,16 +154,6 @@ public struct ModIntPolynomial : IEquatable<ModIntPolynomial> {
     public override string ToString() {
         if (Coefficients.Length == 0) return "0 (mod " + Modulus + ")";
         return String.Join(" + ", Coefficients.Select((e, i) => RepresentCoefficient(e, i)).Where(e => e != "0").Reverse()) + " (mod " + Modulus + ")";
-    }
-
-    private static ModIntPolynomial Sum(IEnumerable<ModIntPolynomial> sequence) {
-        return sequence.Aggregate((a, e) => a + e);
-    }
-    private static ModInt Product(IEnumerable<ModInt> sequence) {
-        return sequence.Aggregate((a, e) => a * e);
-    }
-    private static ModIntPolynomial Product(IEnumerable<ModIntPolynomial> sequence) {
-        return sequence.Aggregate((a, e) => a * e);
     }
 
     public static ModIntPolynomial operator /(ModIntPolynomial numerator, ModIntPolynomial denominator) {
@@ -193,26 +188,25 @@ public struct ModIntPolynomial : IEquatable<ModIntPolynomial> {
         Contract.Requires(coords != null);
         Contract.Requires(coords.Select(e => e.Item1).Duplicates().None());
         Contract.Ensures(coords.All(e => Contract.Result<ModIntPolynomial>().EvaluateAt(e.Item1) == e.Item2));
-        return FromInterpolation(coords.Select(e => Tuple.Create(ModInt.From(e.Item1, modulus), ModInt.From(e.Item2, modulus))).ToArray(), modulus);
+        return FromInterpolation(coords.Select(e => ModPoint.From(e.Item1, e.Item2, modulus)).ToArray(), modulus);
     }
-    public static ModIntPolynomial FromInterpolation(IEnumerable<Tuple<ModInt, ModInt>> coords, BigInteger modulus) {
+    public static ModIntPolynomial FromInterpolation(IEnumerable<ModPoint> coords, BigInteger modulus) {
         Contract.Requires(coords != null);
-        Contract.Requires(coords.Select(e => e.Item1).Duplicates().None());
-        Contract.Requires(coords.All(e => e.Item1.Modulus == modulus));
-        Contract.Requires(coords.All(e => e.Item2.Modulus == modulus));
-        Contract.Ensures(coords.All(e => Contract.Result<ModIntPolynomial>().EvaluateAt(e.Item1) == e.Item2));
+        Contract.Requires(coords.Select(e => e.X).Duplicates().None());
+        Contract.Requires(coords.All(e => e.Modulus == modulus));
+        Contract.Ensures(coords.All(e => Contract.Result<ModIntPolynomial>().EvaluateAt(e.X) == e.Y));
 
         var U = From(new[] {BigInteger.One}, modulus);
         var X = U << 1;
 
         if (coords.Count() == 0) return U * 0;
-        if (coords.Count() == 1) return U * coords.Single().Item2;
+        if (coords.Count() == 1) return U * coords.Single().Y;
 
-        var fullNumerator = Product(coords.Select(e => X - U * e.Item1));
-        return Sum(coords.Select(e => {
-            var numerator = fullNumerator / (X - U * e.Item1);
-            var denominator = Product(coords.Except(new[] { e }).Select(f => e.Item1 - f.Item1));
-            return e.Item2 * numerator * denominator.MultiplicativeInverse();
-        }));
+        var fullNumerator = coords.Select(e => X - U * e.X).Product();
+        return coords.Select(e => {
+            var numerator = fullNumerator / (X - U * e.X);
+            var denominator = coords.Except(new[] { e }).Select(f => e.X - f.X).Product();
+            return e.Y * numerator * denominator.MultiplicativeInverse();
+        }).Sum();
     }
 }

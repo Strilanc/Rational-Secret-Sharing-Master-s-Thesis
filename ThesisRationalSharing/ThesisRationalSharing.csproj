@@ -68,22 +68,27 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsynchronousNetwork.cs" />
+    <Compile Include="Crypto\Concrete\CommitSaltedSHA1.cs" />
+    <Compile Include="Crypto\IVerifiableRandomFunction.cs" />
     <Compile Include="Crypto\ISecretSharingScheme.cs" />
     <Compile Include="Crypto\IPublicKeyCryptoScheme.cs" />
     <Compile Include="Crypto\ICommitment.cs" />
     <Compile Include="Crypto\ISecureRandomNumberGenerator.cs" />
+    <Compile Include="Math\ModPoint.cs" />
     <Compile Include="Math\Rational.cs" />
     <Compile Include="Protocols\AsyncNoCrypto.cs" />
+    <Compile Include="Protocols\LinePointCommitment.cs" />
+    <Compile Include="Protocols\PolyCommitment.cs" />
     <Compile Include="Protocols\MessageSequence.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Protocols\AsyncVerified.cs" />
-    <Compile Include="Crypto\BlumBlumShub.cs" />
-    <Compile Include="Crypto\RSA.cs" />
-    <Compile Include="Crypto\HashCommitment.cs" />
-    <Compile Include="Crypto\IMixingScheme.cs" />
-    <Compile Include="Protocols\Synced.cs" />
+    <Compile Include="Crypto\Concrete\BlumBlumShub.cs" />
+    <Compile Include="Crypto\Concrete\RSA.cs" />
+    <Compile Include="Crypto\Concrete\CommitSHA1.cs" />
+    <Compile Include="Protocols\SynchronousBounded.cs" />
     <Compile Include="Math\ModIntPolynomial.cs" />
-    <Compile Include="Crypto\ShamirSecretSharing.cs" />
+    <Compile Include="Crypto\Concrete\ShamirSecretSharing.cs" />
+    <Compile Include="Test.cs" />
     <Compile Include="Math\ModInt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SynchronousNetwork.cs" />

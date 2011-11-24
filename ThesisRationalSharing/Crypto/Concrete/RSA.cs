@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 ///<remarks>Example implementation only. Security vulnerabilities are present.</remarks>
 [DebuggerDisplay("{ToString()}")]
-public class RSA : IPublicKeyCryptoScheme<RSA.Key, RSA.Key, BigInteger> {
+public class RSA : IPublicKeyCryptoScheme<RSA.Key, RSA.Key, BigInteger>, IVerifiableRandomFunctionScheme<RSA.Key, RSA.Key, BigInteger> {
     public readonly BigInteger P;
     public readonly BigInteger Q;
 
@@ -63,5 +63,18 @@ public class RSA : IPublicKeyCryptoScheme<RSA.Key, RSA.Key, BigInteger> {
     }
     public override string ToString() {
         return "RSA: P = " + P + ", Q = " + Q;
+    }
+
+    public Tuple<RSA.Key, RSA.Key> CreatePublicPrivateKeyPair(ISecureRandomNumberGenerator rng) {
+        return GeneratePublicPrivateKeyPair(rng);
+    }
+
+    public ProofValue<BigInteger> Generate(RSA.Key key, BigInteger input, BigInteger range) {
+        var r = key.Process(input);
+        return new ProofValue<BigInteger>(r, r % range);
+    }
+
+    public bool Verify(RSA.Key key, BigInteger input, BigInteger range, ProofValue<BigInteger> output) {
+        return input == key.Process(output.Proof) && output.Value == output.Proof % range;
     }
 }
