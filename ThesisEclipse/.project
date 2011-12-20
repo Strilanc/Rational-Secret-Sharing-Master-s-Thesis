@@ -14,4 +14,11 @@
 	<natures>
 		<nature>net.sourceforge.texlipse.builder.TexlipseNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>src/_refs.bib</name>
+			<type>1</type>
+			<location>C:/Users/Craig/Desktop/Thesis/Refers/_refs.bib</location>
+		</link>
+	</linkedResources>
 </projectDescription>
