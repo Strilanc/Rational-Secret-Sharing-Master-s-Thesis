@@ -656,6 +656,7 @@ We anticipate future work to focus on eliminating the short case or reducing its
 
 
 
+
 \chapter{Asynchronous Broadcast}
 
 In practice, communication is not synchronous. The internet is asynchronous and unreliable in nature, requiring protocols allowing for those possibilities. This chapter presents protocols that work when we assume Asynchronous Broadcast instead of Synchronous Broadcast.
@@ -666,7 +667,7 @@ Asynchronous broadcast still assumes reliability, timeliness, and consistency ac
 
 \section{Limitations of all Asynchronous Protocols}
 
-\begin{lemma} If all players are rational, the secret is conspicuous, and communication is asynchronous then at least one player will not learn the secret \end{lemma}
+\begin{lemma} If all players are rational, the secret is conspicuous, and communication is asynchronous then at least one player will not learn the secret \label{Lem:Async:ConspicuousMustSacrifice} \end{lemma}
 \begin{proof}
 We will prove this result by contradiction. Assume all players learn the secret.
 
@@ -811,15 +812,17 @@ When a player sends for the final time, they need $\delta$ more shares. The last
 The value of $\delta$ is a trade-off between resistance against coalitions and the number of sacrificial players. A higher $\delta$ requires sacrificing more players. A lower $\delta$ increases the number of shares a player has when they send, meaning fewer colluders are needed to pre-emptively learn the secret.
 
 
+
 \section{Asynchronous Protocol for Inconspicuous Secrets and Bounded Opponents}
+
+ABCP, the asynchronous bounded conspicuous protocol presented in the previous section, sacrifices a player. In fact, sacrificing a player is a necessary property of all conspicuous asynchronous protocols, by Lemma \ref{Lem:Async:ConspicuousMustSacrifice}. This raises the obvious question: is an asynchronous protocol with no necessary sacrifices possible when the secret is not conspicuous? This section answers that question by presenting a protocol, hereafter referred to as ``ABIP'' (asynchronous bounded inconspicuous protocol), that does not require a player to be sacrificed.
+
 
 \subsection{Overview}
 
-We propose a protocol that assumes asynchronous broadcast, bounded opponents, and an inconspicuous secret, hereafter referred to as ``ABIP'' (asynchronous bounded inconspicuous protocol).
+ABIP is based on a sequence of check rounds followed by a definitive block of $n$ rounds, where all players learn the secret. In round $i$ the player with index satisfying $i \equiv r \pmod{n}$ sends a message, created by a verifiable random function (VRF). All players then add the message a sender specific offset to create a round share. Both the offsets and VRFs are chosen beforehand by the dealer. Before the definitive block of rounds the round shares are random but during the definitive block the round shares are the Y coordinates of Shamir shares, with a threshold of $t-1$, for the secret. This property is a consequence of how the offsets and VRFs are chosen by the dealer.
 
-ABIP is based on a sequence of check rounds followed by a definitive block of $n$ rounds, where all players learn the secret. In round $i$ the player with index satisfying $i \equiv r \pmod{n}$ sends a message, created by a verifiable random function (VRF). All players then add the message to player specific offset to create a round share. Both the offsets and VRFs are chosen beforehand by the dealer. Before the definitive block of rounds the round shares are random but during the definitive block the round shares are the Y coordinates of Shamir shares, with a threshold of $t-1$, for the secret, because of how the offsets and VRFs are chosen by the dealer.
-
-Players recognize the definitive block of rounds in two ways. The first method is noticing that the $t$ latest round shares fit on a polynomial of degree $t-2$. This only occurs during the definitive block, with arbitrarily high probability, because a set of $t$ random points from a finite field $\mathbb{F}$ will, with probability $1 - \frac{1}{|\mathbb{F}|}$, not fit on a polynomial of degree $t-2$. The second method is used by the first $t-1$ senders in the definitive block of rounds. The other players will recognize the definitive round, by using the first method, and stop participating (otherwise the first $t-1$ senders can also use the first method). Thus, during the definitive round, other players will either cooperate and allow the first method to be used or all simultaneously defect. In that case the first $t-1$ senders recognize the definitive block of rounds by the simultaneous defection.
+Players recognize the definitive block of rounds in two ways. The first method is noticing that the $t$ latest round shares fit on a polynomial of degree $t-2$. This only occurs during the definitive block, with arbitrarily high probability, because a set of $t$ random points from a finite field $\mathbb{F}$ will, with probability $1 - \frac{1}{|\mathbb{F}|}$, not fit on a polynomial of degree $t-2$. The second method is noticing that there are only $t-1$ players who are still participating. The first $t-1$ senders must use the second method because other players will recognize the definitive block of rounds, by using the first method, and stop participating to prevent the first $t-1$ senders from also using the first method.
 
 See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{Ex:ABIP} for more details.
 
@@ -917,6 +920,7 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
   \end{tabular}
 \end{figure}
 
+
 \subsection{Analysis}
 
 ABIP's performance is similar to SBP's. If the number of players is $n$, the threshold is $t$, the marginal definitive round probability is $\alpha$, and the costs of the verifiable random function scheme and Shamir's share scheme are represented as $VRFS$ and $Shamir(t, n)$ then the asymptotic time is $O(VRFS \times n + Shamir(t, n))$ for the dealer and $O((\frac{1}{\alpha} + t) \times VRFS + \frac{1}{\alpha} \times Shamir(t, n))$ for the players. The practical costs depend primarily on the efficiency of the implementations of the VRF and Shamir schemes.
@@ -925,15 +929,14 @@ The information in ABIP's shares is effectively identical to SBP. Each share con
 
 If ABIP is run with $t$ or more non-colluding rational players then all rational players will learn the secret with arbitrarily high probability. If there are no malicious players and at least $t$ non-colluding rational players then all rational players are guaranteed to learn the secret.
 
-ABIP is not immune to rational or malicious coalitions. Rational coalitions may learn the secret early enough to defect and prevent others from learning the secret. Malicious coalitions with size greater than $n-t$ can defect and cause players to accept a random secret. ABIP can be adjusted to make it immune to malicious coalitions, by having players abort unless they get $n$ definitive shares, but the adjustment results in players being sacrificed.
+ABIP is not immune to malicious coalitions. Malicious coalitions with size greater than $n-t$ can defect and cause players to accept a random secret. ABIP can be adjusted to make it immune to malicious coalitions, by having players abort unless they get $n$ definitive shares, but the adjustment results in players being sacrificed.
+
+ABIP is not immune to rational coalitions. A non-colluding rational player learns the secret only after they have $t$ definitive round messages. This occurs, at the earliest, after all cooperating players have at least $t-1$ messages. Players with $t-1$ messages have the correct candidate secret, but only accept it as the secret when they either get another message or see that fewer than $t$ players have not defected. But a rational coalition with $|C|$ members may learn the secret when cooperating players have at most $t-|C|$ messages. The coalition can defect when the cooperating players have an incorrect candidate secret, or no candidate secret. If the coalition happens to hold all but up to $|C| - 2$ of the unsent definitive round messages then the remaining players will get no secret or accept an incorrect candidate secret. 
 
 \begin{lemma} When $t > 2$, ABIP has constant temptation $0$ for non-colluding rational players. \end{lemma}
 
 \begin{lemma} When $t = 2$ ABIP has maximum temptation $1 - (1 - \alpha)^n$ for non-colluding rational players \end{lemma}
 
-\begin{lemma}
-
-\end{lemma}
 \begin{lemma} ABIP is immune to malicious coalitions up to size $n-t$ \end{lemma}
 \begin{proof}
 A player can defect by either sending no message or sending an incorrect message. If a player sends no message then they are marked as non-cooperating. If a player sends an incorrect message then they are detected with arbitrarily high probability, based on the VRF scheme. A coalition has multiple chances to defect but all are detected with arbitrarily high probability.
@@ -941,13 +944,11 @@ A player can defect by either sending no message or sending an incorrect message
 A malicious coalition of size greater than $n-t$ could force the remaining players to assume their current potential secret is the true secret, But coalitions of size $n-t$ can't trigger that case unless some other player defects, which won't occur since they aren't malicious and rational players cooooooooooperate\ldots
 \end{proof}
 
-\begin{lemma} Malicious coalitions with size greater than $n-t$ can convince the remaining players to accept an incorrect secret \end{lemma}
+\begin{lemma} Malicious coalitions with size greater than $n-t$ can convince the other players to accept a random secret \end{lemma}
 \begin{proof}
-When more than $n-t$ players have defected there are fewer than $t$ cooperating players remaining. The remaiing players assume the other players defected because they were rational and learned the secret. They accept a random value as the secret. 
+When there are fewer than $t$ cooperating players remaining, and players have received at least $t-1$ messages, players assume the others are defecting because the definitive block of rounds is occuring and accept their current candidate secret as the true secret.
 
-Malicious coalitions with at most $n-t$ members can't prevent the remaining players from learning the secret, because of the message verification. Their probability of success can be made exponentially small by increasing the strength of the VRF scheme. However, larger coalitions have other options. 
-
-When the number of cooperating players goes from $t$ to $t-1$, one of the remaining players will mistakenly accept a random secret as the true secret. This occurs because players stop cooperating when they realize fewer than $t$ players remain. The first player to notice will see $t-1$ players remaining, the second player will see $t-2$ remaining, and so forth until the last player to notice sees only themselves remaining. But this causes them to believe the other players disconnected due to the potential secret being the true secret, and so they accept whatever the potential secret happens to be as the true secret. Malicious coalitions with more than $n-t$ players can cause this scenario at will.
+A malicious coalition with more than $n-t$ players can choose to cause there to be fewer than $t$ cooperating players remaining. Therefore they can cause the remaining players to incorrectly assume the definitive block of rounds is occuring and accept their current candidate secret.
 \end{proof}
 
 \begin{lemma} If there are at least $t$ non-colluding rational players then all rational players will learn the secret \end{lemma}
@@ -955,7 +956,8 @@ When the number of cooperating players goes from $t$ to $t-1$, one of the remain
 A non-colluding rational player can either defect or cooperate. If they know the current potential secret is the true secret then they are expected to send no message. If they did send a message, it would only help the other players more. Once they know the secret, they can't defect. If they don't know the secret then there is a $\alpha$ chance the current potential secret is the true secret. Thus defecting will succeed with probability $\alpha$. But cooperating succeeds with at probability greater than $\alpha$, because the next message can show that the current potential secret is not the true secret. Therefore players are either incapable of defecting or do better by cooperating, meaning non-colluding rational players will cooperate. having at least $t$ cooperating players ensures they learn the secret so $t$ or more non-colluding rational players will learn the secret.
 \end{proof}
 
-\begin{lemma} Rational coalitions can pre-emptively learn the secret and trick other players into accepting the wrong secret \end{lemma}
+\begin{lemma}
+\begin{lemma} Rational coalitions with size greater than $n-t$ pre-emptively learn the secret and trick other players into accepting the wrong secret \end{lemma}
 \begin{proof}
 Rational coalitions can pre-emptively learn the secret. If the player ordering places $c$ colluders at or past the $t-c$'th position then the coalition will learn the secret $c-1$ rounds earlier than any non-colluding rational player. This probability is bounded from below by $1 - \frac{{t - 1 \choose |C|}}{{n \choose |C|}}$, the probability of all colluders being placed at or past the $t-1$'th position. This lower bound gets worse as $n$ increasing, meaning there is a gap between the lower bound proven earlier to apply to all protocols ($\frac{|C| \times (|C|-1)}{n \times (n-1)}$) and the achieved bound. One or the other or both can be improved.
 
