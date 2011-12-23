@@ -622,16 +622,16 @@ Algorithm \ref{alg:SUIP:DefinitiveRound} details how to choose a definitive roun
   \end{algorithmic}
 \end{algorithm}
 
-\subsection{Choosing a large enough $\omega$}
+\subsection{Choosing a Large Enough Number of Indicators $\omega$}
 \label{Sec:SUIP:MinIndicators}
 
 When the short message is applied to the wrong player or in the wrong round, the resulting indicators are effectively random. If they happen to all be 0 then players will accept the wrong secret instead of aborting the protocol. Because malicious coalitions of unbounded players can find these cases, we need to bound the probability of any existing.
 
-Suppose our goal is to ensure the probability is less than $\frac{1}{c}$ for some value $c$. There is a $\frac{1}{|\mathbb{F}|^\omega}$ chance of $\omega$ indicators coming up 0. If there are $r$ rounds, $n$ players, and the threshold is $t$ then there are ${n \choose t} \times t \times r$ ways the short message can be applied. The probability of a bad case existing is thus $\frac{{n \choose t} \times t \times r}{|\mathbb{F}|^\omega}$. Solving $\frac{{n \choose t} \times t \times r}{|\mathbb{F}|^\omega} < \frac{1}{c}$ for $\omega$ gives $\omega > log_{|\mathbb{F}|} ({n \choose t} \times t \times r \times c) = (log_{|\mathbb{F}|} c) + (log_{|\mathbb{F}|} r) + log_{|\mathbb{F}|} ({n \choose t} \times t)$.
+Suppose our goal is to ensure the probability is less than $\frac{1}{c}$ for some value $c$. There is a $\frac{1}{|\mathbb{F}|^\omega}$ chance of $\omega$ indicators coming up 0. If there are $r$ rounds, $n$ players, and the threshold is $t$ then there are $\binom{n}{t} \times t \times r$ ways the short message can be applied. The probability of a bad case existing is thus $\frac{\binom{n}{t} \times t \times r}{|\mathbb{F}|^\omega}$. Solving $\frac{\binom{n}{t} \times t \times r}{|\mathbb{F}|^\omega} < \frac{1}{c}$ for $\omega$ gives $\omega > log_{|\mathbb{F}|} (\binom{n}{t} \times t \times r \times c) = (log_{|\mathbb{F}|} c) + (log_{|\mathbb{F}|} r) + log_{|\mathbb{F}|} (\binom{n}{t} \times t)$.
 
 Our bound for $\omega$ depends on the number of rounds $r$, but this is not ideal since it may ``leak" information about $r$ to the players via $\omega$. Since $r$ is a random variable, we can spend some of our probability bound choosing a high enough cutoff value $r'$. If we choose to allocate a $\frac{1}{c \times 2}$ probability to not exceeding the cutoff and the remaining $\frac{1}{c \times 2}$ probability to ensuring there are no bad cases when we don't exceed the cutoff, then we meet the overall bound of $\frac{1}{c}$. We solve for the cutoff round $r'$ using the fact that $r$ follows a geometric distribution parameterized by $\alpha$: $(1 - \alpha)^{r'-1} \leq \frac{1}{2 \times c}$, which solves to $r' \geq 1 + log_{\frac{1}{1-\alpha}}(2 \times c)$. We get our final bound by updating our previous $r$-dependent bound, feeding in a maximum probability of $\frac{1}{2 \times c}$ and the minimum value of $r'$:
 
-$$\omega > (log_{|\mathbb{F}|} (2 \times c)) + (log_{|\mathbb{F}|} (1 + log_{\frac{1}{1-\alpha}}(2 \times c))) + log_{|\mathbb{F}|} ({n \choose t} \times t)$$
+$$\omega > (log_{|\mathbb{F}|} (2 \times c)) + (log_{|\mathbb{F}|} (1 + log_{\frac{1}{1-\alpha}}(2 \times c))) + log_{|\mathbb{F}|} (\binom{n}{t} \times t)$$
 
 For practical cases ($|F| \geq 2^{256}, n \leq 200, \alpha \geq \frac{1}{100}, c \leq 2^{256}$) a large enough value of $\omega$ is 2. For theoretical cases, the minimum number of indicators grows logarithmically against the magnitude or inverse magnitude of the protocol's parameters and $c$. Therefore we can practically achieve an arbitrarily high probability of the short message not being abusable.
 
@@ -701,7 +701,7 @@ Let $s$ be the sender of round $r$'s message.
 
 The sender can not be one of the learners because the sender is receiving no new information during round $r$.
 
-If the sender and at least one of the learners are in the coalition, then the coalition can internally simulate sending round $r$'s message before round $r$ occurs and thereby pre-emptively learn the secret. The probability of this occuring is $\frac{|C|}{n} \times \frac{{n - |C| \choose |L|}}{{n - 1 \choose |L|}}$. This function varies with $L$, which the protocol has some control over. Higher values of $L$ give higher probabilities, so a lower bound for any protocol is setting $L$ to its minimum value: 1. This gives a lower bound probability of $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$, which is independent of the protocol.
+If the sender and at least one of the learners are in the coalition, then the coalition can internally simulate sending round $r$'s message before round $r$ occurs and thereby pre-emptively learn the secret. The probability of this occuring is $\frac{|C|}{n} \times \frac{\binom{n - |C|}{|L|}}{\binom{n - 1}{|L|}}$. This function varies with $L$, which the protocol has some control over. Higher values of $L$ give higher probabilities, so a lower bound for any protocol is setting $L$ to its minimum value: 1. This gives a lower bound probability of $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$, which is independent of the protocol.
 \end{proof}
 
 Pre-emptively learning the secret allows a coalition to defect earlier, potentially depriving other players of shares and causing them to not learn the secret. All rational asynchronous protocols are vulnerable to coalitions pre-sharing their messages internally. Every protocol has a lower bound of at least a $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$ chance of coalitions pre-emptively learning the secret. This minimum lower bound can probably be improved.
@@ -820,9 +820,9 @@ ABCP, the asynchronous bounded conspicuous protocol presented in the previous se
 
 \subsection{Overview}
 
-ABIP is based on a sequence of check rounds followed by a definitive block of $n$ rounds, where all players learn the secret. In round $i$ the player with index satisfying $i \equiv r \pmod{n}$ sends a message, created by a verifiable random function (VRF). All players then add the message a sender specific offset to create a round share. Both the offsets and VRFs are chosen beforehand by the dealer. Before the definitive block of rounds the round shares are random but during the definitive block the round shares are the Y coordinates of Shamir shares, with a threshold of $t-1$, for the secret. This property is a consequence of how the offsets and VRFs are chosen by the dealer.
+ABIP is a modified version of SBP, except the commitment scheme is replaced by a lower threshold on the secret shares. The protocol is divided into a sequence of check rounds followed by a definitive round, during which players learn the secret. Each round is divided into turns where each player sends a message created by a verifiable random function (VRF). Players add messages to sender specific offsets to create round shares. Both the offsets and VRFs are chosen beforehand by the dealer. Before the definitive round the round shares are random but during the definitive round the round shares are the Y coordinates of Shamir shares, with a threshold of $t-1$, for the secret. This property is a consequence of how the offsets and VRFs are chosen by the dealer.
 
-Players recognize the definitive block of rounds in two ways. The first method is noticing that the $t$ latest round shares fit on a polynomial of degree $t-2$. This only occurs during the definitive block, with arbitrarily high probability, because a set of $t$ random points from a finite field $\mathbb{F}$ will, with probability $1 - \frac{1}{|\mathbb{F}|}$, not fit on a polynomial of degree $t-2$. The second method is noticing that there are only $t-1$ players who are still participating. The first $t-1$ senders must use the second method because other players will recognize the definitive block of rounds, by using the first method, and stop participating to prevent the first $t-1$ senders from also using the first method.
+Players recognize the definitive round in two ways. The first method, which we call the ``threshold method", checks if $t$ round shares fit on a polynomial of degree $t-2$. This occurs only, with arbitrarily high probability, during the definitive round because a set of $t$ random points from a finite field $\mathbb{F}$ will, with probability $1 - \frac{1}{|\mathbb{F}|}$, not fit on a polynomial of degree $t-2$. The second method, called the ``recovery method'', is noticing that exactly $t-1$ round shares were broadcast in a round. The first $t-1$ senders of a round must use the recovery method because the other players can use the threshold method, learn the secret, and defect before they broadcast their own definitive round share.
 
 See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{Ex:ABIP} for more details.
 
@@ -840,10 +840,10 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
     	$$G_i, V_i = VRFS.CreateKeyPair()$$
     \STATE Generate $n$ shamir shares, with a threshold of $t-1$, for the secret $s$
     	$$S_i = CreateShamir(s, n, t - 1, \mathbb{F})$$
-    \STATE Pick a random round $r$ to be the start of the definitive block of rounds
+    \STATE Pick a random round $r$ to be the definitive round
         $$r = Random(Geometric(\alpha))$$
     \STATE Compute ordered list $Y$ of $n$ offsets for each player
-    	$$Y_i = S_i - VRFS.ValueOf(G_i, r+(i - r \pmod{n}))$$
+    	$$Y_i = S_i - VRFS.ValueOf(G_i, r)$$
     \STATE Return the ordered list $R$ of $n$ ABIP shares each containing an index, secret key, all public keys, and all offsets 
     	$$R_i = (i, G_i, V, Y)$$
   \end{algorithmic}
@@ -859,26 +859,29 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
     \INPUT Share index $i$, generator $G_i$, all verifiers $V$, all offsets $Y$
     \OUTPUT Secret $s$ or Failure
     \STATE Mark all players, identified by indexes in $[1, n]$, including ourselves, as cooperating
-    \STATE Let $Q$ be an empty queue of points in $\mathbb{F}^2$
-    \STATE Let $P(Q)$ evaluate to the polynomial created by interpolating the points in $Q$
     \STATE Let $r = 1$
-    \WHILE { at least $t$ players are marked as cooperating }
-      \STATE Let $j = r \pmod{n}$
-      \STATE If $j = i$ then send the message $VRFS.ValueAndProof(G_i, r)$
-      \STATE Let $s, b$ be the expected message from the player with index $j$
-      \IF {$s, b$ was not received or does not satisfy $VRFS.Verify(V_j, s, b)$}
-        \STATE Mark player $r \pmod{n}$ as not cooperating
-      \ELSE
-        \STATE Enqueue the point $(j, s + \mathbb{F}_j)$ to $Q$
-        \IF {$Q$ has $t$ points}
-          \STATE If $P(Q)$ has degree less than $t-1$ then Return the secret $s = P(Q)(0)$
-          \STATE Remove the oldest item in $Q$
+    \WHILE { true }
+      \STATE If fewer than $t$ players are marked as cooperating then Exit with Failure
+      \STATE Let $S$ be an empty set of points in $\mathbb{F}^2$
+      \STATE Let $P(S)$ evaluate to the polynomial created by interpolating the points in $S$
+      \STATE Include the point $(i, VRFS.ValueOf(G_i, r) + Y_i)$ in $S$
+      \FOR {$j$ = 1 to $n$}
+        \STATE If $j = i$ then send the message $VRFS.ValueAndProof(G_i, r)$
+        \STATE Let $a, p$ be the expected message from the player with index $j$
+        \IF {$a, p$ was not received or does not satisfy $VRFS.Verify(V_j, a, p)$}
+          \STATE Mark player $j$ as not cooperating
+        \ELSE
+          \STATE Include the point $(j, a + Y_j)$ in $S$
+          \IF {$S$ has exactly $t$ points and $P(S)$ has degree less than $t-1$}
+            \STATE Exit with the secret $s = P(S)(0)$
+          \ENDIF
         \ENDIF
+      \ENDFOR
+      \IF {$S$ has exactly $t-1$ points}
+        \STATE Exit with the secret $s = P(S)(0)$
       \ENDIF
       \STATE Increment $r$
     \ENDWHILE
-    \STATE If $Q$ has fewer than $t-1$ points then return Failure
-    \STATE Return the secret $s = P(Q)(0)$
   \end{algorithmic}
 \end{algorithm}
 
@@ -886,52 +889,74 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
   \caption{Example run of ABIP}
   \label{Ex:ABIP}
   \begin{itemize}
-    \item Finite Field $\mathbb{F}$ is integers mod 5
-    \item Share Count $n = 2$
-    \item Threshold $t = 2$
+    \item Finite field $\mathbb{F}$ is integers mod 5
+    \item Share count $n = 2$ and threshold $t = 2$
     \item Marginal definitive block probability $\alpha = \frac{1}{3}$
     \item Verifiable Random Functions $PedagogicalRSA(p: 7, q: 11)$
-    \item Commitment Scheme $CS = PlainSHA1$
     \item Secret $s = 3$
     \item Create RSA key pairs for VRFS for each of the 2 players
     \subitem $V_1, G_1 = 17, 53$
     \subitem $V_2, G_2 = 13, 37$
-    \item Pick the start of the definitive block of rounds $r = 2$
+    \item Pick the start of the definitive round $r = 3$
     \item Create the Shamir shares $S_i$ for each player based on a generated polynomial $P$
     \subitem $P(x) = 3 \pmod{5}$
     \subitem $S_1 = (1, 3)$, $S_2 = (2, 3)$
     \item Compute the offsets 
     \subitem $X_1 = 3 - (3^{53} \pmod{77}) \equiv 3 \pmod{5}$
-    \subitem $X_2 = 3 - (2^{37} \pmod{77}) \equiv 2 \pmod{5}$
+    \subitem $X_2 = 3 - (3^{37} \pmod{77}) \equiv 2 \pmod{5}$
     \item Transition from dealer protocol to player protocol 
-    \item After round 2 player 1 realizes $degree(P_3) = t-2$ and accepts $P_3(0) = 3$ as the secret
-    \item After round 3 player 2 realizes player 1 did not send, solves $P_3$ by assuming $degree(P_3) = t-2$, and also accepts $P_3(0) = 3$ as the secret.
   \end{itemize}
   \begin{tabular}{|r|r|r|r|r|}
     \hline
-    Round & Msg mod $77$   & Check mod $77$ & Round share mod $5$    & Poly mod $5$\\
+    Round & Msg mod $77$   & Check mod $77$ & Round share mod $5$    & Combine mod $5$\\
     \hline
-    1 & $M_1 = 1^{53} = 1$  & $1^{13} = 1$   & $P_1(1) = P_2(1) = 1+3 = 4$  & -\\
+    1 & $M_1 = 1^{53} = 1$  & $1^{13} = 1$   & $P(1) = 1+3 = 4$  & $P_1(x) = 0 + 4x$\\
+      & $M_2 = 1^{37} = 1$  &  $1^{17} = 1$  & $P(2) = 1+2 = 3$  & $deg(P_1) < 1$: False\\
     \hline
-    2 & $M_2 = 2^{37} = 51$ &  $51^{17} = 2$ & $P_2(2) = P_3(2) = 51+2 = 3$ & $P_2(x) = 0 + 4x$\\
+    2 & $M_1 = 2^{53} = 74$ & $74^{13} = 2$  & $P(1) = 74+3 = 2$ & $P_2(x) = 1 + x$\\
+      & $M_2 = 2^{37} = 51$ &  $51^{17} = 2$ & $P(2) = 51+2 = 3$ & $deg(P_2) < 1$: False\\
     \hline
-    3 & $M_1 = 3^{53} = 5$  & - & $P_3(1) = P_4(1) = 5+3 = 3$  & $P_3(x) = 3$\\
+    3 & $M_1 = 3^{53} = 5$  & $5^{13} = 3$   & $P(1) = 5+3 = 3$  & $P_3(x) = 3$\\
+      & $M_2 = 3^{37} = 31$ & not sent       & $P(2) = 31+2 = 3$ & $deg(P_3) < 1$: True\\
     \hline
   \end{tabular}
+  \begin{itemize}
+    \item Player 2 thresholds $deg(P_3) < 1$ by having $M_2$ and receiving $M_1$
+    \item Player 1 recovers $deg(P_3) = 0$ when player 2 stops participating
+    \item Both players have enough shares to solve $P_3$
+    \item Both players learn the secret $s = P_3(0) = 3$  
+  \end{itemize}
 \end{figure}
 
 
 \subsection{Analysis}
 
-ABIP's performance is similar to SBP's. If the number of players is $n$, the threshold is $t$, the marginal definitive round probability is $\alpha$, and the costs of the verifiable random function scheme and Shamir's share scheme are represented as $VRFS$ and $Shamir(t, n)$ then the asymptotic time is $O(VRFS \times n + Shamir(t, n))$ for the dealer and $O((\frac{1}{\alpha} + t) \times VRFS + \frac{1}{\alpha} \times Shamir(t, n))$ for the players. The practical costs depend primarily on the efficiency of the implementations of the VRF and Shamir schemes.
+ABIP's performance is similar to SBP's, with identical asymptotic time and space costs. Let the number of players be $n$, the threshold be $t$, the marginal definitive round probability ne $\alpha$, and the costs of the verifiable random function scheme and Shamir's share scheme be represented as $VRFS$ and $Shamir(t, n)$ respectively. The dealer's asymptotic time cost is $O(VRFS \times n + Shamir(t, n))$. The players' asymptotic time cost is $O(\frac{1}{\alpha} \times (n \times VRFS + Shamir(t, n)))$. Each share contains $O(n)$ information, but most of it (the VRF public keys and the offsets) is common to all of the shares. The amount of unique information in each share (the index and the VRF private key) has constant size.
 
-The information in ABIP's shares is effectively identical to SBP. Each share contains $O(n)$ information, but most of it (the VRF public keys and the offsets) is common to all of the shares. The amount of unique information in each share (the index and the VRF private key) has constant size.
+If ABIP is run with $t$ or more non-colluding rational players then all rational players will learn the secret, with arbitrarily high probability.
 
-If ABIP is run with $t$ or more non-colluding rational players then all rational players will learn the secret with arbitrarily high probability. If there are no malicious players and at least $t$ non-colluding rational players then all rational players are guaranteed to learn the secret.
+ABIP is not immune to coalitions. Malicious coalitions with size greater than $n-t$ can cause players to mistakenly use the recovery method during a check round and accept a random value as the secret. Rational coalitions may pre-emptively learn the secret and be able to defect when other players know at most $t-|C|$ definitive round shares. If players receive fewer than $t-1$ definitive round shares, which can occur if enough of the unsent definitive round shares belonged to the defecting coalition, they abort the protocol without accepting any value as the secret.
 
-ABIP is not immune to malicious coalitions. Malicious coalitions with size greater than $n-t$ can defect and cause players to accept a random secret. ABIP can be adjusted to make it immune to malicious coalitions, by having players abort unless they get $n$ definitive shares, but the adjustment results in players being sacrificed.
+\begin{lemma} If a player knows at least $t-1$ round shares from the definitive round, they will learn the secret \end{lemma}
+\begin{proof}
+If a player has $t$ or more round shares then they can recognize the definitive round using the threshold method. If a player has exactly $t-1$ round shares and receives no more then they will apply the recovery method and assume the current round is the definitive round.  Therefore, a player with $t-1$ or more definitive round shares will know or assume the current round is the definitive round.
 
-ABIP is not immune to rational coalitions. A non-colluding rational player learns the secret only after they have $t$ definitive round messages. This occurs, at the earliest, after all cooperating players have at least $t-1$ messages. Players with $t-1$ messages have the correct candidate secret, but only accept it as the secret when they either get another message or see that fewer than $t$ players have not defected. But a rational coalition with $|C|$ members may learn the secret when cooperating players have at most $t-|C|$ messages. The coalition can defect when the cooperating players have an incorrect candidate secret, or no candidate secret. If the coalition happens to hold all but up to $|C| - 2$ of the unsent definitive round messages then the remaining players will get no secret or accept an incorrect candidate secret. 
+Because the round shares have a threshold of $t-1$, any player with $t-1$ definitive round shares can use them to learn the secret value.
+
+Therefore players with $t-1$ round shares from the definitive round will recognize the definitive round and be able to reconstruct the secret.
+\end{proof}
+
+\begin{lemma} If a players knows fewer than $t-1$ round shares at the end of a round, they will not learn the secret \label{Lem:ABIP:FewSharesNolearn} \end{lemma}
+\begin{proof}
+As shown in Algorithm \ref{alg:ABIP:Player}, players abort the protocol without accepting a secret when they have fewer than $t-1$ round shares. 
+\end{proof}
+
+\begin{lemma} If a player knows exactly $t-1$ round shares at the end of a check round, they will incorrectly accept a random value as the secret \end{lemma}
+\begin{proof}
+If a round ends and a player knows exactly $t-1$ round shares, they will use the recovery method and assume the round was definitive.
+
+In non-definitive rounds the round shares are random. The secret created by combining $t-1$ random shares is also random. Therefore the player will accept a random secret.  
+\end{proof}
 
 \begin{lemma} When $t > 2$, ABIP has constant temptation $0$ for non-colluding rational players. \end{lemma}
 
@@ -956,10 +981,9 @@ A malicious coalition with more than $n-t$ players can choose to cause there to 
 A non-colluding rational player can either defect or cooperate. If they know the current potential secret is the true secret then they are expected to send no message. If they did send a message, it would only help the other players more. Once they know the secret, they can't defect. If they don't know the secret then there is a $\alpha$ chance the current potential secret is the true secret. Thus defecting will succeed with probability $\alpha$. But cooperating succeeds with at probability greater than $\alpha$, because the next message can show that the current potential secret is not the true secret. Therefore players are either incapable of defecting or do better by cooperating, meaning non-colluding rational players will cooperate. having at least $t$ cooperating players ensures they learn the secret so $t$ or more non-colluding rational players will learn the secret.
 \end{proof}
 
-\begin{lemma}
 \begin{lemma} Rational coalitions with size greater than $n-t$ pre-emptively learn the secret and trick other players into accepting the wrong secret \end{lemma}
 \begin{proof}
-Rational coalitions can pre-emptively learn the secret. If the player ordering places $c$ colluders at or past the $t-c$'th position then the coalition will learn the secret $c-1$ rounds earlier than any non-colluding rational player. This probability is bounded from below by $1 - \frac{{t - 1 \choose |C|}}{{n \choose |C|}}$, the probability of all colluders being placed at or past the $t-1$'th position. This lower bound gets worse as $n$ increasing, meaning there is a gap between the lower bound proven earlier to apply to all protocols ($\frac{|C| \times (|C|-1)}{n \times (n-1)}$) and the achieved bound. One or the other or both can be improved.
+Rational coalitions can pre-emptively learn the secret. If the player ordering places $c$ colluders at or past the $t-c$'th position then the coalition will learn the secret $c-1$ rounds earlier than any non-colluding rational player. This probability is bounded from below by $1 - \frac{\binom{t - 1}{|C|}}{\binom{n}{|C|}}$, the probability of all colluders being placed at or past the $t-1$'th position. This lower bound gets worse as $n$ increasing, meaning there is a gap between the lower bound proven earlier to apply to all protocols ($\frac{|C| \times (|C|-1)}{n \times (n-1)}$) and the achieved bound. One or the other or both can be improved.
 
 By learning the secret earlier, the rational coalition can defect earlier and perhaps cause a player to believe the definitive block starts earlier than it really does.
 \end{proof}
@@ -1002,8 +1026,6 @@ What are the effects of losing the other communication assumptions like reliabil
   \item Knows: Can efficiently compute. If you know the prime factors then you know the product.
   \item Learns: Efficiently computes. Quick sort learns the sorted list.
 \end{itemize}
-
-\chapter{References}
 
 \bibliographystyle{plain}
 \bibliography{../../Refers/_refs}
