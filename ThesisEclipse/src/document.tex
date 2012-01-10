@@ -36,7 +36,7 @@ In secret sharing, rational players are not just rational in the economic sense 
 
 A protocol that works in the presence of rational players is more applicable to the real world than a protocol that doesn't. For example, consider a group of financial firms with shares to valuable market information. Each firm would profit from access to the information but would profit even more from exclusive access. Since firms benefit the most from exclusive access to the secret, they are rational in the secret sharing sense. If the firms attempt to combine their shares of the secret using a protocol that assumes players will cooperate, one of them may defect and gain exclusive access. That possibility may prevent the firms from even attempting to combine their shares.
 
-A rational player's payoff is guaranteed to be larger if they learn the secret but that doesn't mean they ignore their secondary preference. They may be willing to trade a small decrease in the probability of learning the secret in exchange for a large increase in the probability of others not learning the secret. Rational secret sharing protocols need to account for these tradeoffs.
+We characterize a rational player's payoffs as 0 for not learning the secret, 1 for everyone learning the secret, and some finite value arbitrarily larger than 1 for learning the secret while preventing others from learning it. The payoff for not learning the secret is 0 to avoid absurdities like defecting being optimal when $n=t$. The payoff for everyone learning the secret can always be normalized to 1 without loss of generality. We assume the dealer, before creating shares, knows an upper bound on the payoff for exclusively learning the secret, allowing protocols to have adjustable security parameters for beating any specified payoff.
 
 A rational player who has learned the secret is effectively malicious. They want to prevent others from learning the secret and don't care about learning the secret, because they already know it.
 
@@ -107,7 +107,7 @@ Some protocols have maximum temptations that are dependent on the shares generat
 
 \subsection {Immunity}
 
-A protocol is immune to rational players or rational coalitions if it causes them to cooperate until they learn the secret. This occurs when, even if malicious players may be present, cooperating is a Nash equilibrium. Informally: protocols immune to rational players turn rational players into cooperating players (until they learn the secret).
+A protocol is immune to rational players or rational coalitions if it causes them to cooperate until they learn the secret. This occurs when cooperating is a Nash equilibriun for rational players, even if other allowed types of players may be present. Informally: protocols immune to rational players turn rational players into cooperating players (until they learn the secret).
 
 A protocol is immune to malicious players or malicious coalitions if it can, with arbitrarily high probability, achieve the same outcome as if they had not been present. Informally: protocols immune to malicious players turn malicious players into absent players.
 
@@ -172,7 +172,7 @@ A similar protocol has been proposed by Fuchsbauer et al. \cite{fuch10} but ther
   \begin{algorithmic}[1]
     \INPUT Total number of shares $n$ and threshold $t$
     \INPUT Marginal probability $\alpha$ of the definitive round occuring
-    \INPUT Verifying function scheme $VRFS$
+    \INPUT Verifiable random function scheme $VRFS$
     \INPUT Commitment scheme $CS$
     \INPUT Finite field $\mathbb{F}$
     \INPUT Secret value $s$ from the finite field $\mathbb{F}$
@@ -185,7 +185,7 @@ A similar protocol has been proposed by Fuchsbauer et al. \cite{fuch10} but ther
     \STATE Create an ordered list $S$ of $n$ Shamir shares $S_i$ where $i > 0$ with threshold $t$ for the secret
     	$$S = CreateShamirShares(s, \mathbb{F}, n, t)$$
     	$$XOfPoint(S_i) = i$$
-    \STATE Compute the ordered list $Y$ of $n$ offsets $X_i$
+    \STATE Compute the ordered list $Y$ of $n$ offsets $Y_i$
     	$$Y_i = YOfPoint(S_i) - VRFS.ValueOf(G_i, r)$$
     \STATE Return the list $R$ of $n$ shares composed of the commitment, all public keys, all offsets, an index, and a private key
     	$$R_i = (c, V, Y, i, G_i)$$
@@ -659,39 +659,42 @@ We anticipate future work to focus on eliminating the short case or reducing its
 
 \chapter{Asynchronous Broadcast}
 
-In practice, communication is not synchronous. The internet is asynchronous and unreliable in nature, requiring protocols allowing for those possibilities. This chapter presents protocols that work when we assume Asynchronous Broadcast instead of Synchronous Broadcast.
+In practice, communication is not synchronous. The internet, for example, is inherently asynchronous. Implementations of synchronous protocols are not secure if they use the internet. This chapter presents protocols for and explores the consequences of weakening the synchronous broadcast assumption to asynchronous broadcast.
 
-Unlike synchronosu broadcast, asynchronous broadcast does not allow senders to synchronize their sends. Rational players, who have an incentive to wait to receive messages before sending, will tend to deadlock unless the protocol specifies a message ordering.
-
-Asynchronous broadcast still assumes reliability, timeliness, and consistency across receivers. If a sender chooses to send a message then all receivers will receive the same message in bounded time. If a sender chooses to send no message, then all receivers will know, in bounded time, no message was sent.
+Unlike synchronous broadcast, asynchronous broadcast does not allow for senders to synchronize their sends. As a consequence, rational players, who have an incentive to wait to receive messages before sending, will tend to deadlock unless the protocol specifies a message ordering. Asynchronous broadcast still assumes reliability, timeliness, and consistency across receivers. If a sender chooses to send a message then all receivers will receive the same message in bounded time. If a sender chooses to send no message, then all receivers will know, in bounded time, no message was sent.
 
 \section{Limitations of all Asynchronous Protocols}
+
+Asynchronous protocols are more restricted than synchronous protocols, but it is not immediately obvious whether or not they are necessarily weaker as a consequence. This section proves that asynchronous protocols are weaker, particularly if the secret is conspicuous.
+
+As shown in Lemma \ref{Lem:Async:ConspicuousMustSacrifice}, asynchronous protocols for conspicuous secrets must ``sacrifice'' at least one player. It is impossible for a protocol to guarantee all rational players will learn the secret, because the last sender would know the secret and have no incentive to send. Inconspicuous protocols can avoid this problem because they allow for the last sender to have the secret but not know it is the secret until other players refuse to send messages in response.
+
+Lemma \ref{Lem:Async:CoalitionsMayPreempt} proves asynchronous protocols are vulnerable to coalitions ``pre-emptively" learning the secret, by pre-sharing messages internally, meaning they learn the secret earlier than any player could have without collusion. Pre-emptively learning the secret allows a coalition to defect earlier, potentially depriving other players of shares and causing them to not learn the secret. As shown in the proof, every coalition has at least a $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$ chance of pre-emptively learning the secret. This lower bound can probably be strengthened significantly, because it is derived under very simple circumstances.
+
+Finally, we prove in Lemma \ref{Lem:Async:NoConspGoodRatImmune} that no conspicuous asynchronous protocol is immune to rational coalitions, if more than a strict majority of the players can learn the secret, because of the coalitions ability to pre-emptively learn the secret. This proof does not extend trivially to inconspicuous asynchronous protocols. An inconspicuous protocol can ensure that, by the time a coalition can learn the secret, all players have, but do not yet know they have, the secret's value. A protocol where players fall back to accepting their current potential secret when the protocol ``fails" can be immune to rational coalitions. However, this fallback strategy can be abused by malicious coalitions to cause players to accept an incorrect potential secret. We conjecture a weaker property for inconspicuous asynchronous protocols: either not immune to malicious coalitions or not immune to rational coalitions.
 
 \begin{lemma} If all players are rational, the secret is conspicuous, and communication is asynchronous then at least one player will not learn the secret \label{Lem:Async:ConspicuousMustSacrifice} \end{lemma}
 \begin{proof}
 We will prove this result by contradiction. Assume all players learn the secret.
 
-Let $r$ be the first round such that, at the end of round $r$, all players know the secret. Let $L$ be the set of players who learn the secret during round $r$. Let $s$ be the expected sender of round $r$'s message. Let $m$ be the message, or lack of a message, sent in round $r$.
+Let $r$ be the first round such that, at the end of round $r$, all players are guaranteed to eventually know the secret even the others stop cooperating. Let $s$ be the expected sender of round $r$'s message.
 
-$m$ is a message, not the lack of a message. Because the secret is conspicous, players can attempt to brute force it by pre-emptively trying likely messages. The easiest possibility to try is the lack of a message. If $m$ was the lack of a message, then the memberes of $L$ would have tried this possibility at the end of the previous round and learned the secret before round $r$. If $m$ is the lack of a message then $r$ is not the first round a player learns the secret, contradicting our assumptions.
+Because the secret is conspicuous, players know whether or not they have the secret. Therefore a player can simulate the other players defecting in order to learn the secret as soon as they are  guaranteed to eventually know the secret. A player can't have a conspicuous secret and not know it.
 
-$s \in L$. If $s$ knew the secret before round $r$, then $s$ would have sent no message. A rational player who knows the secret only cares about preventing or delaying others from learning the secret. Sending the correct message can only help others learn the secret whereas, because the secret is conspicuous, sending nothing (or an invalid message) can't hurt. Therefore, because $s$ did not know the secret before round $r$ but all players know the secret at the end of round $r$, $s$ must have learned the secret during round $r$.
+$s$ either has the secret before round $r$ and knows about having it or doesn't have the secret before round $r$ and knows about not having it.
 
-$s \notin L$. Because $s$ received no information during round $r$ (since there were no other senders), $s$ can't have learned any new values. So $s$ did not learn the secret during round $r$.
+If $s$ doesn't have the secret before round $r$ then, because $s$ received no information during round $r$, $s$ still does not know the secret after round $r$. But all players know the secret after round $r$, so $s$ must have known the secret before round $r$.
 
-Contradiction: $s \in L$ and $s \notin L$.
+Because $s$ knows the secret before round $r$, $s$ has no incentive to send a correct message during round $r$. $s$ knows the secret and knows sending a correct message can only help the other players learn the secret which, because $s$ is rational, $s$ wants to prevent from happening. Therefore $s$ will not send a correct message in round $r$.
 
-The assumption that all players learned the secret is false.
+Because $s$ will not send a correct message in round $r$, no players receive new information during round $r$. Therefore no players can learn the secret during round $r$, contradicting the definition of $r$.
+
+The assumption that all players learned the secret creates a contradiction.
 
 At least one player did not learn the secret.
 \end{proof}
 
-All rational asynchronous protocols for conspicuous secrets must use a sacrificial player. This is a consequence of the fact that a player can check if they have or do not have a conspicuous secret. When the secret is inconspicuous it is possible for a player to have a value and be unsure if it is the secret or not. This allows the player to be incentivized into cooperating for a longer amount of time, and replaces the need for a sacrifical player.
-
 \begin{lemma} If all players are rational and communication is asynchronous then rational coalitions have a greater than $\epsilon > 0$ chance of pre-emptively learning the secret \label{Lem:Async:CoalitionsMayPreempt} \end{lemma}
-
-A coalition pre-emptively learns the secret when members of the coalition learn the secret before any player would have if there were no collusion occuring.
-
 \begin{proof}
 Let $n$ be the number of players.
 Let $C$ be a rational coalition of players, selected randomly, with size less than the threshold $t$.
@@ -704,86 +707,114 @@ The sender can not be one of the learners because the sender is receiving no new
 If the sender and at least one of the learners are in the coalition, then the coalition can internally simulate sending round $r$'s message before round $r$ occurs and thereby pre-emptively learn the secret. The probability of this occuring is $\frac{|C|}{n} \times \frac{\binom{n - |C|}{|L|}}{\binom{n - 1}{|L|}}$. This function varies with $L$, which the protocol has some control over. Higher values of $L$ give higher probabilities, so a lower bound for any protocol is setting $L$ to its minimum value: 1. This gives a lower bound probability of $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$, which is independent of the protocol.
 \end{proof}
 
-Pre-emptively learning the secret allows a coalition to defect earlier, potentially depriving other players of shares and causing them to not learn the secret. All rational asynchronous protocols are vulnerable to coalitions pre-sharing their messages internally. Every protocol has a lower bound of at least a $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$ chance of coalitions pre-emptively learning the secret. This minimum lower bound can probably be improved.
+\begin{lemma} There is no asynchronous protocol for conspicuous secrets that both guarantees more than $ceil(\frac{n}{2})$ of the players learn the secret and is immune to all rational coalitions \label{Lem:Async:NoConspGoodRatImmune} \end{lemma}
+\begin{proof}
+Before a round $r$ a player $p$ has some minimum number $m(r, p)$ of other players that continue cooperating in order for $p$ to learn the secret. If $p$ learns the secret when round $r$ finishes then $m(r, p) = 1$ and $m(r+1, p) = 0$. The number of cooperating players a given player needs can decrease by either 0 or 1 each round, so we can further derive that $m(r-i, p) \leq 1+i$.
 
-We conjecture that, as a result of Lemma \ref{Lem:Async:CoalitionsMayPreempt}, all asynchronous broadcoast protocols are either not immune to rational coalitions or not immune to malicious coalitions.
+Let $m'(r)$ be the minimum value of $m(r, p)$ for any player on round $r$. If at least one player learns the secret and the protocol satisfies the basic correctness requirement that $t-1$ players can't learn the secret then for any $i \in [0, t]$ there will be a round where $m'(r) = i$.
+
+Suppose a rational coalition has size $|C|$ satisfying $1 < |C| < t$. Let $r$ be the smallest round such that $m'(r) = |C|-1$. In round $r$ there is a player who depends on at most $|C|-1$ other players. If that player is in the coalition, and the potential dependees are the other players in the coalition, then the coalition can learn the secret and defect. This leaves at most $n-|C|$ cooperating players, all of whom need at least $|C|-1$ other players to be present in order to learn the secret due to how we choose $r$. If $n < 2 \times |C|$ then they can't learn the secret and will fail.
+
+When the number of players who would have learned the secret if the protocol had been run without the coalition is larger than $ceil(\frac{n}{2})$, they can't all be placed in the coalition. This ensures that the coalition defecting on round $r$ causes fewer players to learn the secret than if the coalition had not been present. Therefore the protocol is not immune to all rational coalitions, because the presence of a rational coalition can cause fewer players to learn the secret.
+\end{proof}
+
+
 
 
 \section{Asynchronous Protocol for Conspicuous Secrets and Bounded Opponents}
 
-The asynchronous protocol for inconspicuous secrets relied on the secret's inconspicuousness to allow the final $t-1$ senders to learn the secret. Even though they knew the most likely secret, they couldn't check it. When the secret is conspicuous, we can't rely on this property and must sacrifice one of the players.
+Asynchronous protocols require trade-offs. For example, as shown in Lemma \ref{Lem:Async:ConspicuousMustSacrifice}, an asynchronous protocol that works for conspicuous secrets must ``sacrifice'' at least one player (if all players are rational then one will not learn the secret). It is also impossible to guarantee more than a strict majortity of players learn the secret while maintaining immunity against rational coalitions, as shown in Lemma \ref{Lem:Async:NoConspGoodRatImmune}.
+
+The protocol presented in this section, named ABCP (asynchronous bounded conspicuous protocol), is an asynchronous protocols for conspicuous secrets (and bounded opponents).
 
 \subsection{Overview}
 
-This protocol is derived from the synchronous bounded protocol. The main difference is that the target round occurs at different times for different players, staggering their completion.
+ABCP is like SBP except the definitive round is ``spread out'', meaning different players learn the secret after different rounds. This allows players who send later to be incentivized into participating for one more round by delaying when they learn the secret.
  
-The proposed algorithm is basically a generalization of the synchronous algorithm. The main differences are that every player gets a different set of underlying secret shares to reveal, and they receive those shares on different rounds. Staggering the target rounds allows more players to stay in the dark about the game finishing until they have sent their message.
+ABCP is based on a sequence of check rounds followed by a block of $n$ definitive rounds during which a player learns shares of the true secret. The start of the block of definitive rounds is different for each player and chosen so that, when they are supposed to send their last message, they will need a specified number of additional shares before they learn the secret. Each round every player sends a message created by a verifiable random function (VRF). Each player takes received messages and offsets them to create round shares. The offset applied is different for each sender and receiver pair. Both the offsets and VRFs are chosen beforehand by the dealer.
 
-\begin{figure}
-\includegraphics[width=\textwidth]{../../Graphics/AsyncVerifiedSecret_n6t5d1.png}
-\caption{Example run of asynchronous conspicuous bounded protocol with parameters $n=6, t=5, \delta=1$. A player is sacrificed.}
-\label{AsyncExample1}
-\end{figure}
+Before a player's definitive block of rounds the round shares they compute are random but during the player's definitive block of rounds the round shares they compute are the Y coordinates of Shamir shares for the secret with a threshold of $t$, because of how the offsets and VRFs are chosen by the dealer. Players recognize the definitive round by combining the round shares and matching the result against a bit commitment to the secret provided by the dealer.
+
+See Algorithms \ref{alg:ABCP:Dealer} and \ref{alg:ABCP:Player} and Figures \ref{ex:ABCP} and \ref{img:ex:ABCP} for details.
 
 \begin{algorithm}
-  \caption{Dealer Protocol}
-  \label{alg:ABC_Dealer}
+  \caption{Dealer Protocol for ABCP}
+  \label{alg:ABCP:Dealer}
   \begin{algorithmic}
-    \INPUT A large prime $p$ defining the size of the finite field containing the secret
-    \INPUT The number of shares $n$ and threshold $t$
-    \INPUT The share shortage $\delta$ satisfying $0 < \delta < t$
-    \INPUT The marginal probability of termination $\alpha$
-    \INPUT The verifiable random function scheme $VRF$
-    \INPUT The commitment scheme $CS$
-    \INPUT The secret $s$
-    \OUTPUT $n$ shares with threshold $t$ of the secret $s$
-    \STATE Create a commitment $c$ to the secret $s$ in the commitment scheme $CS$
-    \STATE Create $n$ verifiable functions defined by the key pairs $G_i, V_i = VRFS.CreateKeyPair()$
-    \STATE Pick a target round $r$ from $GeometricDistribution(\alpha)$
-    \FOR{For each share index $i$ from 1 to $n$}
-      \STATE Generate a set $S$ of $n$ shamir shares with threshold $t$ for the secret $s$
-      \STATE Compute the first unblinding round $r_{unblind} = r + (i-r \pmod{n})$
-      \STATE Compute the share/message offsets $\mathbb{F}_j = VRFS.ValueOf(G_j, r_{unblind} + (j-r_{unblind} \pmod{n})) + S_j$
-      \STATE Yield a share composed of public information $n, t, c, V$ and private information $i, G_i, \mathbb{F}$
-    \ENDFOR
+    \INPUT Finite field $\mathbb{F}$
+    \INPUT Number of shares $n$ and threshold $t$
+    \INPUT Share shortage $\delta$ satisfying $0 < \delta < t$
+    \INPUT Marginal probability of termination $\alpha$
+    \INPUT Verifiable random function scheme $VRFS$ and commitment scheme $CS$
+    \INPUT Secret value $s$ from the finite field $\mathbb{F}$
+    \OUTPUT An ordered list of $n$ ABCP shares for the secret $s$ with a threshold of $t$
+    \STATE Create a commitment $c$ to the secret $s$
+    	$$c = CS.CreateCommitment(s)$$
+    \STATE Create ordered lists $V$ and $G$ of $n$ public ($V$) and private ($G$) VRFS key pairs
+    	$$V_i, G_i = VRFS.NewKeyPair()$$
+    \STATE Pick the earliest definitive round of any share $b$ 
+	    $$b = Random(Uniform(n)) + Random(Geometric(\alpha))$$
+    \STATE Compute the starting round $r_i$ of each share's block of definitive rounds such that on round
+  	    $$r_i = b + (i-b-t+\delta+1 \pmod{n})$$
+    \STATE Create $n$ ordered lists $S_i$ of $n$ Shamir shares $S_{i,j}$ with threshold $t$ for the secret
+  	    $$S_i = CreateShamirShares(s, \mathbb{F}, n, t)$$
+  	    $$XOfPoint(S_{i,j}) = j > 0$$
+    \STATE Compute the $n$ ordered lists $Y_i$ of $n$ offsets $Y_{i,j}$
+  	    $$Y_{i,j} = VRFS.ValueOf(G_j, r_i + (j-r_i \pmod{n})) + S_{i,j}$$
+    \STATE Return the list $R$ of $n$ ABCP shares composed of the commitment, all public keys, share-specific offsets, an index, and a private key
+    	$$R_i = (c, V, Y_i, i, G_i)$$
   \end{algorithmic}
 \end{algorithm}
 \begin{algorithm}
-  \caption{Player Protocol}
-  \label{alg:ABC_Player}
+  \caption{Player Protocol for ABCP}
+  \label{alg:ABCP:Player}
   \begin{algorithmic}
-    \INPUT A large prime $p$ defining the size of the finite field containing the secret
-    \INPUT The number of shares $n$ and threshold $t$
-    \INPUT The commitment $c$ to the unknown secret
-    \INPUT The list of all VRF public keys $V$
-    \INPUT Our index $i$
-    \INPUT Our VRF private key $G_i$
-    \INPUT Our list of share/message offsets $\mathbb{F}$
-    \OUTPUT Succeed with secret or Failure
-    \STATE Mark all players as cooperating, including ourselves
-    \STATE Let $Q$ be an empty queue
+    \INPUT Finite field $\mathbb{F}$
+    \INPUT Total number of shares $n$ and threshold $t$
+    \INPUT Verifiable random function scheme $VRFS$ and commitment scheme $CS$
+    \INPUT Share index $i > 0$
+    \INPUT VRFS private key $G_i$
+    \INPUT Ordered list $V$ of $n$ VRFS public keys
+    \INPUT Ordered list $Y_i$ of $n$ offsets
+    \INPUT Secret commitment $c$
+    \OUTPUT Secret value or Failure
+    \STATE Mark all players, identified by indexes in $[1,n]$, including ourselves, as cooperating
+    \STATE Let $Q$ be an empty queue of points in $\mathbb{F}^2$
     \STATE Let $r = 1$
-    \WHILE {not failed or succeeded}
-	  \STATE Fail if fewer than $t$ players are marked as cooperating
-	  \IF {$r = i \pmod{n}$} 
-	  	 \STATE Let $s, b = VRFS.ValueAndProof(G_i, r)$ 
-	  	 \STATE Send the message $s, b$
-	  \ELSE
-	     \STATE Let $e$ be the player with index $r \pmod{n}$
-	     \STATE Let $s$, $b$ be the message value and proof received from $e$ (if any)
-	     \STATE If $e$ sent no message or a message failing $VRFS.Check(V_{r \pmod{n}}, s, b)$ then mark $e$ as non-cooperating
-	     \STATE If $e$ is marked as non-cooperating then skip to the next round
-	   \ENDIF
-	   \STATE Enqueue $s+F_{r \pmod{n}}$ in $Q$
-       \STATE Remove the oldest item in $Q$ if it has more than $t$ items
-	   \STATE Let the potential secret $s$ be the value at 0 of the polynomial interpolated from the points in $Q$
-	   \STATE If $c$ matches $s$ then succeed with the secret $s$
-       \STATE Increment $r$
+    \WHILE {true}
+	  \STATE If fewer than $t$ players are marked as cooperating then exit with failure
+	  \STATE Let $x$ be the player with index $j$ satisfying $j \equiv r \pmod{n}$
+	  \IF {$j = i$} 
+	  	 \STATE Broadcast the message $VRFS.ValueAndProof(G_i, r)$ to all cooperating players
+	  \ENDIF
+	  \STATE Let $m, w$ be the message value and proof received from $x$ (if any)
+	  \STATE If $x$ sent no message or a message failing $VRFS.Verify(V_j, m, w)$ then mark $x$ as non-cooperating
+	  \STATE If $e$ is marked as non-cooperating then skip to the next round
+	  \STATE Enqueue the point $(j, m + Y_{i,j})$ into $Q$
+      \STATE If $Q$ has more than $t$ items then dequeue the oldest item from $Q$
+	  \IF {$Q$ has $t$ items}
+	   	\STATE Let $P$ be the polynomial interpolated from the points in $Q$
+	    \STATE If $CS.Matches(c, P(0))$ then exit with the secret $P(0)$
+	  \ENDIF
+      \STATE Increment $r$
 	\ENDWHILE
   \end{algorithmic}
 \end{algorithm}
+\begin{figure}
+\includegraphics[width=\textwidth]{../../Graphics/AsyncVerifiedSecret_n6t5d1.png}
+\caption{Representation of shares learned by players running ABCP with $n=6, t=5, \delta=1$. One player does not receive enough definitive shares and is sacrificed.}
+\label{img:ex:ABCP}
+\end{figure}
 
-\begin{lemma} Rational Coalitions with size greater than $\delta$ may learn the secret early enough for all of its members to defect. \end{lemma}
+\subsection{Analysis}
+
+ABCP is less performant than SBP. If the number of players is $n$, the threshold is $t$, the marginal definitive round probability is $\alpha$, the share shortage is $\delta$, and the costs of the verifiable random function scheme and Shamir's share scheme are represented as $VRFS$ and $Shamir(t, n)$ then the asymptotic time is $O(VRFS  \times n^2 + Shamir(t, n) \times n)$ for the dealer and $O((n + \frac{1}{\alpha}) \times (VRFS + Shamir(t, t)))$ for the players. The practical costs depend primarily on the efficiency of the implementations of the VRF and Shamir schemes. ABCP's shares each contain $O(n)$ information.
+
+ABCP is not coalition immune, as is true for any asynchronous conspicuous protocol by Lemma \ref{Lem:Async:NoConspGoodRatImmune}. In particular, coalitions with size greater than $\delta$ may have enough ``future" shares to defect before they reveal any definitive shares to other players.
+
+If ABCP is run with $t$ or more rational players then they will learn the secret, even in the presence of malicious players, with arbitrarily high probability. This is a consequence of coalition immunity. We know the malicious players can be treated as absent players and the rational players will cooperate until they learn the secret. Since there are enough cooperating players and they all learn the secret at the same time, the rational players will learn the secret.
+
+\begin{lemma} Rational Coalitions with size greater than $\delta$ may learn the secret early enough for all of its members to defect before the first block of definitive rounds. \end{lemma}
 
 All of the members of a rational coalition can stop cooperating after any one of them learns the secret. The earlier the secret is learned, the more likely it is that many of the colluders can defect instead of cooperating on important rounds. We already know, from [lemma bla], that all asynchronous protocols allow rational coalitions to potentially learn the secret earlier than any of its members should be able to. But that does not imply the coalition learns the secret early enough to act on the information. This result is stronger, implying the coalition can learn the secret early enough for all of its members to defect before they otherwise would have. 
 
@@ -797,12 +828,20 @@ On round $r+t-1$, the sender for that round needs at least $\delta$ shares from 
 Coalitions with size greater than $\delta$ can have a sender on round $r+t-\delta$ and the remaining members may hold the $\delta$ future round shares the sender needs. This circumstance is sufficient, but by no means necessary, to show that some fraction of possible coalitions will learn the secret early enough for all of their members to defect.
 \end{proof}
 
-\begin{lemma} For Non-Colluding Rational Players, the protocol's Maximum Temptation is $0$ \end{lemma}
+\begin{lemma} For Non-Colluding Rational Players, the protocol has a constant temptation of $0$ \end{lemma}
 \begin{proof}
-When a player sends for the final time, they need $\delta$ more shares before they can learn the secret. If they defect instead of sending, other players will stop sending them shares. Since they are not colluding and not being sent shares, they won't be able to access the shares they need. Therefore if they defect they will not learn the secret.
+When a player sends for the final time, they need $\delta$ more shares before they can learn the secret. If they defect instead of sending, other players will stop sending them messages. Since they are not colluding and not being sent shares, they won't be able to access the shares they need. Therefore if they defect they will not learn the secret.
 \end{proof}
 
-This optimal maximum temptation is possible because some players are sacrificed. Instead of guaranteeing all cooperators learn the secret, we have guaranteed all defectors do not learn the secret.
+This ideal temptation is possible because some players are sacrificed. Instead of guaranteeing all cooperators learn the secret, we have guaranteed all defectors do not learn the secret.
+
+\begin{lemma} Cooperating is a Nash equilibrium for non-colluding rational players \end{lemma}
+\begin{proof}
+When it is a player's turn to send they can either cooperate or defect. If they defect they can do so by sending an incorrect message or by sending no message. If they send no message then the defection is always detected. If they send an incorrect message then the defection is detected with an arbitrarily high probability determined by the VRFS scheme.
+
+In the case where all players are cooperating a player who is deciding to cooperate this turn expects to not learn the secret, due to being sacrificed, with marginal probability $\frac{\lambda \times \delta}{n}$ and total probability $\frac{\delta}{n}$. A player who decides to defect expects to not learn the secret with arbitrarily high probability, and may or may not prevent other players from learn the secret.
+
+\end{proof}
 
 \begin{lemma} If all players are rational and non-colluding then exactly $n - \delta$ players learn the secret \end{lemma}
 \begin{proof}
@@ -815,14 +854,14 @@ The value of $\delta$ is a trade-off between resistance against coalitions and t
 
 \section{Asynchronous Protocol for Inconspicuous Secrets and Bounded Opponents}
 
-ABCP, the asynchronous bounded conspicuous protocol presented in the previous section, sacrifices a player. In fact, sacrificing a player is a necessary property of all conspicuous asynchronous protocols, by Lemma \ref{Lem:Async:ConspicuousMustSacrifice}. This raises the obvious question: is an asynchronous protocol with no necessary sacrifices possible when the secret is not conspicuous? This section answers that question by presenting a protocol, hereafter referred to as ``ABIP'' (asynchronous bounded inconspicuous protocol), that does not require a player to be sacrificed.
+ABCP, the asynchronous bounded conspicuous protocol presented in the previous section, sacrifices at least one player. As shown in Lemma \ref{Lem:Async:ConspicuousMustSacrifice}, sacrificing a player is a necessary property of any conspicuous asynchronous protocol. This raises the obvious question: is an asynchronous protocol with no necessary sacrifices possible when the secret is not conspicuous? This section answers that question by presenting a protocol, hereafter referred to as ``ABIP'' (asynchronous bounded inconspicuous protocol), that does not require a player to be sacrificed.
 
 
 \subsection{Overview}
 
-ABIP is a modified version of SBP, except the commitment scheme is replaced by a lower threshold on the secret shares. The protocol is divided into a sequence of check rounds followed by a definitive round, during which players learn the secret. Each round is divided into turns where each player sends a message created by a verifiable random function (VRF). Players add messages to sender specific offsets to create round shares. Both the offsets and VRFs are chosen beforehand by the dealer. Before the definitive round the round shares are random but during the definitive round the round shares are the Y coordinates of Shamir shares, with a threshold of $t-1$, for the secret. This property is a consequence of how the offsets and VRFs are chosen by the dealer.
+ABIP is a modified version of SBP, except round shares have a lower threshold and there is not bit commitment. The protocol is divided into a sequence of check rounds followed by a definitive round, during which players learn the secret. Each round is divided into turns where each player sends a message created by a verifiable random function (VRF). Players add messages to sender specific offsets to create round shares. Both the offsets and VRFs are chosen beforehand by the dealer. Before the definitive round the round shares are random but during the definitive round the round shares are the Y coordinates of Shamir shares, with a threshold of $t-1$, for the secret. This property is a consequence of how the offsets and VRFs are chosen by the dealer.
 
-Players recognize the definitive round in two ways. The first method, which we call the ``threshold method", checks if $t$ round shares fit on a polynomial of degree $t-2$. This occurs only, with arbitrarily high probability, during the definitive round because a set of $t$ random points from a finite field $\mathbb{F}$ will, with probability $1 - \frac{1}{|\mathbb{F}|}$, not fit on a polynomial of degree $t-2$. The second method, called the ``recovery method'', is noticing that exactly $t-1$ round shares were broadcast in a round. The first $t-1$ senders of a round must use the recovery method because the other players can use the threshold method, learn the secret, and defect before they broadcast their own definitive round share.
+Players recognize the definitive round in two ways. The first method, which we call the ``threshold method", checks if $t$ round shares fit on a polynomial of degree $t-2$. This occurs only, with arbitrarily high probability, during the definitive round because a set of $t$ random points from a finite field $\mathbb{F}$ will, with probability $1 - \frac{1}{|\mathbb{F}|}$, not fit on a polynomial of degree $t-2$. The second method, called the ``recovery method'', is noticing that exactly $t-1$ round shares were broadcast in a round. The first $t-1$ senders of a round must use the recovery method because the other players can use the threshold method, learn the secret, and defect before they broadcast their own round shares.
 
 See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{Ex:ABIP} for more details.
 
@@ -833,7 +872,7 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
     \INPUT A finite field $\mathbb{F}$
     \INPUT Number of shares $n$ and threshold $t$
     \INPUT Marginal probability of termination $\alpha$
-    \INPUT Verifiable random function scheme $VRF$
+    \INPUT Verifiable random function scheme $VRFS$
     \INPUT Secret $s$ in $\mathbb{F}$
     \OUTPUT $n$ shares
     \STATE Create $n$ VRFS key pairs, one for each player
@@ -933,65 +972,99 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
 
 ABIP's performance is similar to SBP's, with identical asymptotic time and space costs. Let the number of players be $n$, the threshold be $t$, the marginal definitive round probability ne $\alpha$, and the costs of the verifiable random function scheme and Shamir's share scheme be represented as $VRFS$ and $Shamir(t, n)$ respectively. The dealer's asymptotic time cost is $O(VRFS \times n + Shamir(t, n))$. The players' asymptotic time cost is $O(\frac{1}{\alpha} \times (n \times VRFS + Shamir(t, n)))$. Each share contains $O(n)$ information, but most of it (the VRF public keys and the offsets) is common to all of the shares. The amount of unique information in each share (the index and the VRF private key) has constant size.
 
-If ABIP is run with $t$ or more non-colluding rational players then all rational players will learn the secret, with arbitrarily high probability.
+If ABIP is run with $t$ or more non-colluding rational players, by Lemma \ref{Lem:ABIP:t-1Def_Sufficient}, all rational players will learn the secret with arbitrarily high probability. But ABIP is not immune to coalitions. Malicious coalitions with size less than $n-t$ are dealth with by Lemma \ref{Lem:ABIP:SmallMalImmune} but coalitions larger than that size can cause players to accept a random secret by Lemma \ref{Lem:ABIP:LargeMalTricks}. Large enough rational coalitions may prevent other players from learning the secret by Lemma \ref{Lem:ABIP:RatColsCanPrevents}, and any rational coalition may learn the secret early by Lemma \ref{Lem:ABIP:Preempt}.
 
-ABIP is not immune to coalitions. Malicious coalitions with size greater than $n-t$ can cause players to mistakenly use the recovery method during a check round and accept a random value as the secret. Rational coalitions may pre-emptively learn the secret and be able to defect when other players know at most $t-|C|$ definitive round shares. If players receive fewer than $t-1$ definitive round shares, which can occur if enough of the unsent definitive round shares belonged to the defecting coalition, they abort the protocol without accepting any value as the secret.
-
-\begin{lemma} If a player knows at least $t-1$ round shares from the definitive round, they will learn the secret \end{lemma}
+\begin{lemma} If a player knows at least $t-1$ round shares from the current definitive round, they will learn the secret \label{Lem:ABIP:t-1Def_Sufficient} \end{lemma}
 \begin{proof}
 If a player has $t$ or more round shares then they can recognize the definitive round using the threshold method. If a player has exactly $t-1$ round shares and receives no more then they will apply the recovery method and assume the current round is the definitive round.  Therefore, a player with $t-1$ or more definitive round shares will know or assume the current round is the definitive round.
 
-Because the round shares have a threshold of $t-1$, any player with $t-1$ definitive round shares can use them to learn the secret value.
-
-Therefore players with $t-1$ round shares from the definitive round will recognize the definitive round and be able to reconstruct the secret.
+If the current round is the definitive round then, as shown above, all players with $t-1$ round shares will assume it is the definitive round and, since the shares have a threshold of $t-1$, be able to reconstruct the secret.
 \end{proof}
 
-\begin{lemma} If a players knows fewer than $t-1$ round shares at the end of a round, they will not learn the secret \label{Lem:ABIP:FewSharesNolearn} \end{lemma}
+\begin{lemma} If a players knows fewer than $t-1$ round shares at the end of any round, they will not learn the secret \label{Lem:ABIP:FewSharesNolearn} \end{lemma}
 \begin{proof}
 As shown in Algorithm \ref{alg:ABIP:Player}, players abort the protocol without accepting a secret when they have fewer than $t-1$ round shares. 
 \end{proof}
 
-\begin{lemma} If a player knows exactly $t-1$ round shares at the end of a check round, they will incorrectly accept a random value as the secret \end{lemma}
+\begin{lemma} If a player knows exactly $t-1$ round shares at the end of a check round, they will incorrectly accept a random value as the secret \label{Lem:ABIP:MissDefSharesLearnWrong} \end{lemma}
 \begin{proof}
 If a round ends and a player knows exactly $t-1$ round shares, they will use the recovery method and assume the round was definitive.
 
 In non-definitive rounds the round shares are random. The secret created by combining $t-1$ random shares is also random. Therefore the player will accept a random secret.  
 \end{proof}
 
-\begin{lemma} When $t > 2$, ABIP has constant temptation $0$ for non-colluding rational players. \end{lemma}
+\begin{lemma} ABIP has maximum temptation $\alpha$ for non-colluding rational players. \label{Lem:ABIP:SoloTemptation} \end{lemma}
 
-\begin{lemma} When $t = 2$ ABIP has maximum temptation $1 - (1 - \alpha)^n$ for non-colluding rational players \end{lemma}
+In any given round a non-colluding rational player is either among the first $t-2$ senders, the $t-1$'th sender, or among the remaining $t$'th to $n$'th senders.
 
-\begin{lemma} ABIP is immune to malicious coalitions up to size $n-t$ \end{lemma}
+If a player is among the first $t-2$ senders and do not send their round message then they will have fewer than $t-1$ round shares and be unable to determine if the round is definitive and unable to reconstruct the round secret. Therefore if they defect they will not learn the secret, so their temptation is $0$.
+
+The $t-1$'th sender in a round has enough shares to reconstruct the round secret but not enough shares to determine if the round is definitive. If they defect they will receive no more round shares, so they will believe the round secret is the true secret with probability $\alpha$ and that is their temptation.
+
+If a player is among the $t$'th to $n$'th senders then they have enough shares to reconstruct the round secret and determine if the round is definitive. When the round is not definitive they can't learn the secret by defecting. When the round is definitive they are not expected to send a valid message, meaning they can't defect, because the other players can use the recovery method to learn the secret. Since they either can't defect or can't learn the secret, their temptation is $0$.
+
+All players experience a temptation of $0$, except the $t-1$'th sender who experiences a temptation of $\alpha$.
+
+\begin{lemma} ABIP is immune to malicious coalitions up to size $n-t$ \label{Lem:ABIP:SmallMalImmune} \end{lemma}
 \begin{proof}
 A player can defect by either sending no message or sending an incorrect message. If a player sends no message then they are marked as non-cooperating. If a player sends an incorrect message then they are detected with arbitrarily high probability, based on the VRF scheme. A coalition has multiple chances to defect but all are detected with arbitrarily high probability.
 
-A malicious coalition of size greater than $n-t$ could force the remaining players to assume their current potential secret is the true secret, But coalitions of size $n-t$ can't trigger that case unless some other player defects, which won't occur since they aren't malicious and rational players cooooooooooperate\ldots
+A malicious coalition of size greater than $n-t$ can trick the remaining players into applying the recovery method to a non-definitive round. to assume their current potential secret is the true secret, But coalitions of size $n-t$ can't trigger that case unless some other player defects, which won't occur since they aren't malicious and rational players cooooooooooperate\ldots
 \end{proof}
 
-\begin{lemma} Malicious coalitions with size greater than $n-t$ can convince the other players to accept a random secret \end{lemma}
+\begin{lemma} Malicious coalitions with size greater than $n-t$ can convince the other players to accept a random secret \label{Lem:ABIP:LargeMalTricks} \end{lemma}
 \begin{proof}
 When there are fewer than $t$ cooperating players remaining, and players have received at least $t-1$ messages, players assume the others are defecting because the definitive block of rounds is occuring and accept their current candidate secret as the true secret.
 
 A malicious coalition with more than $n-t$ players can choose to cause there to be fewer than $t$ cooperating players remaining. Therefore they can cause the remaining players to incorrectly assume the definitive block of rounds is occuring and accept their current candidate secret.
 \end{proof}
 
-\begin{lemma} If there are at least $t$ non-colluding rational players then all rational players will learn the secret \end{lemma}
+\begin{lemma} By choosing a small enough $\alpha$, cooperating is a Nash equilibrium for non-colluding rational players \label{Lem:ABIP:SoloNash} \end{lemma}
 \begin{proof}
-A non-colluding rational player can either defect or cooperate. If they know the current potential secret is the true secret then they are expected to send no message. If they did send a message, it would only help the other players more. Once they know the secret, they can't defect. If they don't know the secret then there is a $\alpha$ chance the current potential secret is the true secret. Thus defecting will succeed with probability $\alpha$. But cooperating succeeds with at probability greater than $\alpha$, because the next message can show that the current potential secret is not the true secret. Therefore players are either incapable of defecting or do better by cooperating, meaning non-colluding rational players will cooperate. having at least $t$ cooperating players ensures they learn the secret so $t$ or more non-colluding rational players will learn the secret.
+As shown in Lemma \ref{Lem:ABIP:SoloTemptation}, a non-colluding rational player experiences a maximum temptation of $\alpha$. Their payoff for defecting can be made arbitrarily low by decreasing $\alpha$. If they cooperate until the definitive round they have some fixed non-zero probability of learning the secret, based on the number of other non-colluding rational players and the distribution of colluding rational players. By choosing a small enough $\alpha$ we can guarantee the expected payoff for cooperating is larger.
+
+Note that we are implicitely assuming that rational players do not prefer the case where they have no secret but all other players believe an incorrect secret over the case where everyone learns the correct secret (the final sender in a non-definitive round has this option when $n=t$).
+
+If $\alpha$ is small enough then a non-colluding rational player's payoff is maximized by following the equilibrium strategy of cooperating.
 \end{proof}
 
-\begin{lemma} Rational coalitions with size greater than $n-t$ pre-emptively learn the secret and trick other players into accepting the wrong secret \end{lemma}
+\begin{lemma} If there are at least $t$ non-colluding rational players then all cooperating rational players will learn the secret \label{Lem:ABIP:WorksForEnoughSoloRats} \end{lemma}
 \begin{proof}
-Rational coalitions can pre-emptively learn the secret. If the player ordering places $c$ colluders at or past the $t-c$'th position then the coalition will learn the secret $c-1$ rounds earlier than any non-colluding rational player. This probability is bounded from below by $1 - \frac{\binom{t - 1}{|C|}}{\binom{n}{|C|}}$, the probability of all colluders being placed at or past the $t-1$'th position. This lower bound gets worse as $n$ increasing, meaning there is a gap between the lower bound proven earlier to apply to all protocols ($\frac{|C| \times (|C|-1)}{n \times (n-1)}$) and the achieved bound. One or the other or both can be improved.
+Non-colluding rational players will cooperate until they learn the secret, by Lemma \ref{Lem:ABIP:SoloNash}.
 
-By learning the secret earlier, the rational coalition can defect earlier and perhaps cause a player to believe the definitive block starts earlier than it really does.
+In non-definitive rounds the $t$ cooperating players will all send their message, ensuring everyone who is cooperating has at least $t$ round shares and can determine the round is non-definitive. In the definitive round players may not cooperate, due to learning the secret before they have to send their message. But since we have at least $t-1$ cooperaters we know at least $t-1$ players will send a message, ensuring everyone who is cooperating has at least $t-1$ definitive round shares and will learn the secret by Lemma \ref{Lem:ABIP:t-1Def_Sufficient}. 
 \end{proof}
 
-\begin{lemma} Coalitions of size $t-1$ can precompute all the potential secrets \end{lemma}
+\begin{lemma} Rational coalitions may learn the secret earlier than any non-colluding player could. \label{Lem:ABIP:Preempt} \end{lemma}
+\begin{proof}
+Players can learn the secret when they have $t$ definitive round shares. For a non-colluding player this occurs, at the earliest, after the $t-1$'th turn of the definitive round. But coalition of size at least $c$ can learn the secret after the $t-c$'th turn, which is before the $t-1$'th turn, of the definitive round. This occurs when the player send ordering places $c$ or more colluders at or past the $t-c$'th turn.
 
-The secret is stored as $t-1$-of-$n$ shares. Coalitions of size $t-1$ can generate the definitive round shares ahead of time, although they can't recognize them. This gives them a list of possible secrets, with secrets near the start being more likely based on a geometric distribution. This distribution of possible secrets has significantly lower entropy than the uniform distribution of possible secrets, especially when the coalition is compressed so one potential secret has a large run. Increasing $\alpha$ increases the amount of entropy in the distribution but also increases the expected number of rounds.
+The probability of a coalition of size $|C|$ pre-emptively learning the secret is at least the probability of all colluders being placed at or past the $t-1$'th position: $1 - \frac{\binom{t - 1}{|C|}}{\binom{n}{|C|}}$. Note that even this rough lower bound does not meet the general bound of $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$, derived as part of proving Lemma \ref{Lem:Async:CoalitionsMayPreempt}, especially as $n$ increases. There is room for improvement in the general bound or in the protocol.
 
+A coalition has a non-zero chance of pre-emptively learning the secret before any non-colluding player can possibly learn the secret.
+\end{proof}
+
+\begin{lemma} Rational coalitions with size greater than $n-t+1$ may prevent other players from learning the secret \label{Lem:ABIP:RatColsCanPrevents} \end{lemma}
+\begin{proof}
+When a coalition pre-emptively learns the secret, as is possible by Lemma \ref{Lem:ABIP:Preempt}, they can defect before the $t-1$'th turn. Before the $t-1$'th turn some players do not yet have enough shares to learn the secret. If enough of the remaining senders for the round are part of the coalition, which is possible when the coalition's size is greater than $n-t+1$, the non-colluding players will not learn the secret.
+\end{proof}
+
+\begin{lemma} Coalitions of size $t-1$, or individual players when $t=2$, learn information about the secret before the protocol starts \end{lemma}
+\begin{proof}
+The secret is stored as $t-1$-of-$n$ shares. Coalitions of size $t-1$, or individual players when $t=2$, can generate $t-1$ round shares for any given round. For any given round, they have enough round shares available to reconstruct the round secret before the protocol even starts.
+
+The ability to precompute round secrets gives a geometric probability distribution over potential secrets. The round secret of the first round is the true secret with probability $(1-\alpha)^0 \times \alpha$, the round secret of the second round is the true secret with probability $(1-alpha)^1 \times \alpha$, and so forth.
+
+The geometric distribution over possible secrets can be combined with the player's original distribution $D$ to create a distribution $D'$ with less entropy. In practic the geometric distribution will already have significantly less entropy than $D$, which is likely to be a uniform distribution over a huge finite field, especially because potential secrets are not guaranteed to be unique.
+
+Because of the ability to compute a distribution for the secret with less entropy, coalitions of size $t-1$, or invidual players when $t=2$, learn information about the secret as soon as they receive their shares.
+\end{proof}
+
+\subsection{Summary}
+
+ABIP is an asynchronous protocol for inconspicuous secrets that does not sacrifice a player when rational players are not colluding. It has reasonable costs and ensures that, when the number of non-colluding rational players meets the threshold, the secret is learned.
+
+ABIP is not coalition immune. Although malicious coalition with size less than $n-t$ can do no harm, malicious coalitions with size greater than $n-t$ can cause players to accept an incorrect secret instead of the ideal of only preventing them from learning the secret. Rational coalitions of any size may learn the secret too early and, if they have size greater than $n-t$, can also prevent other players from learning the secret.
 
 
 
