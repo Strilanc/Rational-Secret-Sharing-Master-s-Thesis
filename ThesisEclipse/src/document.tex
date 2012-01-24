@@ -169,7 +169,7 @@ A similar protocol has been proposed by Fuchsbauer et al. \cite{fuch10} but ther
 \begin{algorithm}
   \caption{Dealer Protocol for SBP}
   \label{alg:SBP:Dealer}
-  \begin{algorithmic}[1]
+  \begin{algorithmic}
     \INPUT Total number of shares $n$ and threshold $t$
     \INPUT Marginal probability $\alpha$ of the definitive round occuring
     \INPUT Verifiable random function scheme $VRFS$
@@ -195,7 +195,7 @@ A similar protocol has been proposed by Fuchsbauer et al. \cite{fuch10} but ther
 \begin{algorithm}
   \caption{Player Protocol for SBP}
   \label{alg:SBP:Player}
-  \begin{algorithmic}[1]
+  \begin{algorithmic}
     \INPUT Total number of shares $n$ and threshold $t$
     \INPUT Verifying function scheme $VRFS$
     \INPUT Commitment scheme $CS$
@@ -320,7 +320,7 @@ SBP has reasonable costs, coalition immunity, and ensures with arbitrarily high 
 
 \section{Synchronous Protocol for Inconspicuous Secrets allowing Unbounded Opponents}
 
-When opponents are computationally unbounded they have the ability to perform brute force attacks on many cryptographic primitives. The protocol proposed here, hereafter refered to as ``SUIP" (synchronous unbounded inconspicuous protocol), is secure in the information theoretic sense, meaning opponents are limited by missing information instead of computational difficulty.
+When opponents are computationally unbounded they have the ability to perform brute force attacks on many cryptographic primitives. The protocol proposed here, hereafter refered to as ``SUIP" (synchronous unbounded inconspicuous protocol), is secure in the information theoretic sense, meaning opponents are thwarted by missing information instead of computational difficulty.
 
 Kol and Noar \cite{kol08} show that unbounded players require shares with unbounded size. This is a consequence of the fact that players can't securely re-use entropy against unbounded opponents. For example, an unbounded player can simulate all possible seeds to a pseudo random number generator and discard seeds that don't match the output they've seen. As the number of possible seeds decreases, the unbounded player can predict future rounds more and more accurately. Since the number of rounds must be unbounded, as shown by Halpern and Teague \cite{halpern04}, protocols using a fixed amount of entropy ``run out'' of unused entropy and end up with a maximum temptation of 1.
 
@@ -328,11 +328,11 @@ Kol and Noar \cite{kol08} show that unbounded players require shares with unboun
 \subsection{Creating Verifiable Messages for Unbounded Opponents}
 \label{sec:vermes}
 
-Because unbounded opponents can break the security of verifiable random functions by using brute force attacks, a different message verification scheme is needed. We need a verification scheme that is secure in the information theoretic sense. Each receiver must be able to detect forged messages with high probability, even if the sender colludes with other receivers. No receiver should be able to pre-emptively determine the messages they will receive, even when colluding with other receivers.
+Because unbounded opponents can break the security of verifiable random functions by using brute force attacks, a different message verification scheme is needed. We need a verification scheme that is secure in the information theoretic sense. Each receiver must be able to detect forged messages with high probability, even if the sender colludes with other receivers. No receiver should be able to pre-emptively determine the messages they will receive, even when colluding with other receivers. Rivest \cite{rivest99} published a verification scheme satisfying these properties.
 
-Rivest \cite{rivest99} published a verification scheme satisfying these properties. The scheme has the dealer sign each message by transforming it into a line, in a finite field, with slope equal to the original message and a random y-intercept. To allow verification of the message, the dealer reveals a random point on the line to the receiver. See Algorithms \ref{alg:CreatingVerifiableMessageForUnbounded} and \ref{alg:VerifyMessageForUnbounded} for more information on creating and verifying messages.
+In Rivest's scheme the dealer signs each message by transforming it into a line, over a finite field, with slope equal to the original message and a random y-intercept. The line is given to the sender of the message. To allow verification of the message, the dealer reveals a random ``check'' point on the line to the receiver. See Algorithms \ref{alg:CreatingVerifiableMessageForUnbounded} and \ref{alg:VerifyMessageForUnbounded} for more information on creating and verifying messages.
 
-In Rivest's system, the sender can't undetectably forge messages because changing the message means changing the slope of the line and picking a new offset. But any line with a different slope intersects the old line at only one point. If the intersection point is not the verifier's check point, which is more likely to occur the larger the finite field is, then the verifier detects the forgery. See Figure \ref{img:ForgingVerifiableMessageForUnbounded} for an example. Conversely, the verifier can't determine the expected message because for each possible slope, corresponding to a message, there is an offset that causes the line to pass through the check point. The verifier only knows how the slope relates to the offset, not the slope individually. Finally, because independent y-intercepts and check points are chosen for each verifier receiving the same message, collusion is not an issue.
+The sender can't undetectably forge messages because changing the message means changing the slope of the line. But any line with a different slope will intersect the old line at only one point, which is unlikely to be the verifier's randomly chosen check point. If the intersection point is not the verifier's check point, which is more likely to occur the larger the finite field is, then the verifier detects the forgery. See Figure \ref{img:ForgingVerifiableMessageForUnbounded} for an example. Conversely, the verifier can't determine the expected message because for each possible slope, corresponding to a message, there is an offset that creates a line passing through the check point. The verifier only knows how the slope relates to the offset, not the slope individually. Finally, because independent y-intercepts and check points are chosen for each verifier receiving the same message, collusion is not an issue.
 
 \begin{algorithm}
   \caption{Creating a Verifiable Message Secure in the Information Theoretic Sense}
@@ -343,7 +343,7 @@ In Rivest's system, the sender can't undetectably forge messages because changin
     \OUTPUT A signed message $(m, b)$ for the sender and a check point $(v_x, v_y)$ for the receiver
     \STATE Let $b$ be a random value in $\mathbb{F}$ 
     \STATE Let $v_x$ be a random value in $\mathbb{F}$
-    \STATE Let $v_y = b + m \times v_x \pmod{p}$
+    \STATE Let $v_y = b + m \times v_x$
     \STATE Return $((m, b), (v_x, v_y))$
   \end{algorithmic}
 \end{algorithm}
@@ -361,26 +361,26 @@ In Rivest's system, the sender can't undetectably forge messages because changin
 
 \begin{figure}
 \includegraphics[width=\textwidth]{../../Graphics/PointAndLineExample.png}
-\caption{Given a signed message ($m=2, b=2$) and a desired fake message ($m'=1$), each possible forged offset ($b'$) matches only one of the possible verifiers. Since the verifier is chosen at random, the chance of successful forging is $\frac{1}{p}$.}
+\caption{Given a signed message ($m=2, b=2$) and a desired fake message ($m'=1$), each possible forged offset ($b'$) matches only one of the possible verifiers. Since the verifier is chosen at random, the chance of successful forging is $\frac{1}{|\mathbb{F}|}$.}
 \label{img:ForgingVerifiableMessageForUnbounded}
 \end{figure}
 
 \subsection{Overview}
 
-Like SBP, SUIP is based on a sequence of ``fake" rounds followed by a definitive round. But SUIP's round messages are all specified in advance by the dealer. Each player has a list of messages to send, one per round. A message is composed of a $t$ of $n$ share for the round secret, which is the true secret on the definitive round but random on other rounds, and $t$ of $n$ shares for several round indicators, which are 0 on the definitive round but random on other rounds. Players recognize the definitive round, and thus learn the secret is the round secret, by noticing when all of the round indicators are 0.
+Like SBP, SUIP is based on a sequence of ``fake" rounds followed by a definitive round. But SUIP's round messages are all specified in advance by the dealer. Each player has a list of messages to send, one per round. A message is composed of a $t$-of-$n$ share for the round secret, which is the true secret on the definitive round and random on other rounds, and accompanying $t$-of-$n$ shares for several round indicators, which are 0 on the definitive round and random on other rounds. Players recognize the definitive round, and thus learn the secret is the round secret, by noticing when all of the round indicators are 0.
 
-SUIP can terminate in two ways, based on the lengths of the lists of messages and the definite round. Either the definitive round will occur before any of the players run out of messages to send, hereafter referred to as the ``normal case'', or it will occur on the round after a single player has run out of messages to send, hereafter referred to as the ``short case". The player who runs out of messages in the short case is called the short player. The dealer gives a ``short message'' to all players that contains the short player's missing message. The short message's contents are masked adding them to the short player's last message to send, to ensure it can't be used when the short player is not participating.
+The dealer gives a ``short message'' to all players that may contain a masked message based on how the protocol terminates. SUIP can terminate in two ways, based on the lengths of the lists of messages and the definitive round. Either the definitive round occurs before any of the players run out of messages to send, hereafter referred to as the ``normal case'', or it occurs on the round after a single player has run out of messages to send, hereafter referred to as the ``short case". The player who runs out of messages in the short case is called the ``short player''. The short message is the message that would have been sent by the short player, if they had not run out of messages, masked by adding its contents to the short player's previous message to ensure it can't be used when the short player is not participating.
 
-All messages, except the short message, are verified using the scheme explained in Section \ref{sec:vermes}. Every player has verifiers for every message they expect to receive. Every player has signatures for every receiver for every message they expect to send. The short message is verified implicitely by the round indicators: when it is applied in the wrong round or to the wrong player it effectively randomizes the round indicators, meaning the probability they are all 0 can be made as small as necessary.
+All messages, except the short message, are verified using the scheme explained in Section \ref{sec:vermes}, to prevent message forging. Every player has verifiers for every message they expect to receive. Every player has signatures for every receiver for every message they expect to send. The short message is verified implicitely by the round indicators: when it is applied in the wrong round or to the wrong player it effectively randomizes the round indicators, meaning the probability they are all 0 can be made as small as necessary.
 
-Each round every player broadcasts their message for the round and verifies the messages they have received. If there are at least $t$ available round messages then the round secret and round indicators are easily recovered. If there are fewer than $t-1$ available round messages then the round secret and round indicators can't be recovered and the protocol aborts. If there are exactly $t-1$ available round messages then the short case may be occuring and players will attempt to use the short message to recover a $t$'th round message. For each player who did not send a valid message this round, but was cooperating until now, a potential round message is created by adding the short message's contents to the player's previous message's contents. If none of the potential short messages results in the round indicators all being 0, then the short case is not occuring and there are only $t-1$ players remaining so the protocol aborts.
+Each round every player broadcasts their message for the round to all other players and verifies the messages they receive. If there are at least $t$ available round messages then the round secret and round indicators are easily recovered and the protocol will succeed when a round's indicators are all 0. If there are fewer than $t-1$ available round messages then the round secret and round indicators can't be recovered and the protocol aborts. If there are exactly $t-1$ available round messages then the short case may be occuring and players attempt to use the short message to recover a $t$'th round message. For each player who did not send a valid message this round, but was cooperating until now, a potential round message is created by adding the short message's contents to the player's previous message's contents. If one of the potential short messages results in the round indicators all being 0 then the protocol succeeds. Otherwise the short case is not occuring and the protocol aborts.
 
 See Algorithms \ref{alg:SUIP:Dealer} and \ref{alg:SUIP:Player} and Figure \ref{Ex:SUIP} for more details.
 
 \begin{algorithm}
   \caption{Dealer Protocol for SUIP}
   \label{alg:SUIP:Dealer}
-  \begin{algorithmic}[1]
+  \begin{algorithmic}
     \INPUT Finite field $\mathbb{F}$
     \INPUT Total number of shares $n$ and threshold $t$
     \INPUT Marginal probability of definitive round occuring $\alpha$
@@ -388,19 +388,19 @@ See Algorithms \ref{alg:SUIP:Dealer} and \ref{alg:SUIP:Player} and Figure \ref{E
     \INPUT Message list marginal termination probability $\gamma$ satisfying $\gamma \leq \alpha$
     \INPUT Secret value $s$ from $\mathbb{F}$
     \OUTPUT Ordered list of $n$ shares
-    \STATE Choose the minimum number of indicators as explained in Section \ref{Sec:SUIP:MinIndicators}
+    \STATE Choose the minimum number of indicators $\omega$ as explained in Section \ref{Sec:SUIP:MinIndicators}
     \STATE Generate an ordered list $L$ of $n$ list lengths
     	$$D_i = Random(Geometric(stopChance: \gamma))$$
     	$$L_1 = \beta + D_1 \text{, } \text{ } \text{ } L_i = L_{i-1} + 1 + D_i$$
-    \STATE Shuffle the list lengths, noting the new index $c$ of the shortest list
+    \STATE Uniformly shuffle the list lengths, noting the new index $c$ of the shortest list
     \STATE Choose the definitive round $r$ as explained in Section \ref{Sec:SUIP:ChooseRound}
     \STATE Generate Shamir shares for the round secrets and indicators
     	$$S_{i} = CreateShamir(if(i = r, s, Random(\mathbb{F})), \mathbb{F}, n, t) \text{ for } i \in [1, L_n+1]$$
     	$$I_{i,j} = CreateShamir(if(i = r, 0, Random(\mathbb{F})), \mathbb{F}, n, t) \text{ for } i \in [1, L_n+1], j \in [1, \omega]$$
-    \STATE Create signatures and verifiers for every share for every sending and receiving player
-    \STATE Compute the short message $X$ composed of the short secret $X_0$ and short indicators $X_{1..\omega}$
-    	$$X_0 = S_{r,c} - S_{r-1,c} \text{, } \text{ } \text{ } XI_j = I_{r,j,c} - I_{r-1,j,c} \text{ for } j \in [1, \omega]$$
-    \STATE Return the ordered list $R$ of $n$ shares $R_i$
+    \STATE Create signatures and verifiers for every secret share $S_i$ and indicate share $I_{i,j}$ for every pair of sending and receiving player
+    \STATE Compute the short message $X$ composed of a masked secret share $X_0$ and masked indicator shares $X_{1..\omega}$
+    	$$X_0 = S_{r,c} - S_{r-1,c} \text{, } \text{ } \text{ } X_j = I_{r,j,c} - I_{r-1,j,c} \text{ for } j \in [1, \omega]$$
+    \STATE Return the ordered list $R$ of $n$ SUIP shares $R_i$
     	$$R_i = (i, X, S_{i,j}, I_{i,k,j}, VerifiersUpToRound(L_i+1), SignaturesUpToRound(L_i))$$
     	$$\text{for } i \in [1, n], j \in [1, L_i], k \in [1, \omega]$$
   \end{algorithmic}
@@ -409,7 +409,7 @@ See Algorithms \ref{alg:SUIP:Dealer} and \ref{alg:SUIP:Player} and Figure \ref{E
 \begin{algorithm}
   \caption{Player Protocol for SUIP}
   \label{alg:SUIP:Player}
-  \begin{algorithmic}[1]
+  \begin{algorithmic}
     \INPUT Finite field $\mathbb{F}$
     \INPUT Total number of shares $n$ and threshold $t$
     \INPUT Share index $i$
@@ -434,6 +434,7 @@ See Algorithms \ref{alg:SUIP:Dealer} and \ref{alg:SUIP:Player} and Figure \ref{E
         \STATE Compute the round secret $s$ and indicators from received and $extra$ shares
         \STATE If all round indicators are 0 then exit with secret $s$
       \ENDFOR
+      \STATE Increment $r$ by $1$
     \ENDWHILE
   \end{algorithmic}
 \end{algorithm}
@@ -493,21 +494,15 @@ See Algorithms \ref{alg:SUIP:Dealer} and \ref{alg:SUIP:Player} and Figure \ref{E
 
 \subsection{Analysis}
 
-Let the finite field be $\mathbb{F}$, the number of players be $n$, the threshold be $t$, the marginal definitive round probability be $\alpha$, the marginal list termination probability be $\gamma$, the minimum list length be $\beta$, and number of indicators $\omega$. The expected number of rounds is $\frac{1}{\alpha}$. The expected size of the shortest list of messages is $\beta + \frac{1}{\gamma}$. The expected size of the largest list of messages is $\beta + \frac{n}{\gamma}$. The expected size of shares is $O((\beta + \frac{n}{\gamma}) \times n \times (log |\mathbb{F}|) \times \omega)$. The expected runtime of the dealer is $O((\beta + \frac{n}{\gamma}) \times n^2 \times (log |\mathbb{F}|) \times \omega \times Shamir(n, t))$. The expected runtime of the players is $O(\frac{1}{\alpha} \times n \times (log |\mathbb{F}|) \times \omega \times Shamir(n, t))$.
+SUIP is relatively expensive to run, especially for the dealer, who has to simulate all player interactions. Let the finite field be $\mathbb{F}$, the number of players be $n$, the threshold be $t$, the marginal definitive round probability be $\alpha$, the marginal list termination probability be $\gamma$, the minimum list length be $\beta$, and number of indicators $\omega$. The expected number of rounds is $\frac{1}{\alpha}$. The expected size of the shortest list of messages is $\beta + \frac{1}{\gamma}$. The expected size of the longest list of messages is $\beta + \frac{1}{\gamma}$. The expected size of the largest list of messages is $\beta + \frac{n}{\gamma}$. The expected size of shares, dominated by the $O(n)$ verifiers and signatures needed for each entry in the longest list, is $O((\beta + \frac{n}{\gamma}) \times \omega \times n \times (log |\mathbb{F}|))$. The expected runtime of the dealer is $O((\beta + \frac{n}{\gamma}) \times n^2 \times (log |\mathbb{F}|) \times \omega \times Shamir(n, t))$. The expected runtime of the players is $O(\frac{1}{\alpha} \times n \times (log |\mathbb{F}|) \times \omega \times Shamir(n, t))$.
 
-Because it is designed for potentially unbounded players, SUIP is expensive compared to its bounded variant SBP. SUIP's share size scales with the expected number of rounds, players, and indicators. By comparison, SBP has shares with size $O(n)$ and, unlike in SUIP, most of the information in the shares is not private. The dealer costs in SUIP also scale poorly, because the dealer effectively simulates every player's interaction with every other player for every round, whereas in SBP the dealer can handle each player individually and can ignore non-definitive rounds.
+Because it is designed for potentially unbounded players, SUIP is expensive compared to its bounded variant SBP. SUIP's share sizes increase linearly with the expected number of rounds and indicators and quadratically with the number of players. By comparison, SBP's share sizes increase only with the number of players and only linearly in that respect. Additionally, unlike in SUIP, most of the information in SBP's shares is common to all the shares. The dealer costs in SUIP also scale poorly, because the dealer effectively simulates every player's interaction with every other player for every round, whereas in SBP the dealer can handle each player individually and can ignore non-definitive rounds.
 
-Given any probability $p < 1$, we can choose values for $\omega$, $\alpha$, $\beta$, and $\gamma$ that ensure running SUIP with at least $t$ rational players results in all rational players learning the secret with probability greater than $p$. $\beta$ must be large enough and $\gamma$ must be small enough to ensure the chance of cases where players can misbehave (all related to the short case) is sufficiently small (these cases are covered in Lemmas \ref{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound}, \ref{Lem:SUIP:MaxSizeCoalitionsPremptivelyKnowShortRound}, \ref{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret}, \ref{Lem:SUIP:ShortPlayerMayLearnSecretExclusively}, \ref{Lem:SUIP:AllCoalitionsTempted}, and \ref{Lem:SUIP:MaxSizeCoalitionsTemptedMore}. Their effect is bounded by Lemmas \ref{Lem:SUIP:NoPlayerLearningSecretIsReducible}, \ref{Lem:SUIP:ShortPlayerLearningSecretExclusivelyIsReducible}, and \ref{Lem:SUIP:HighTemptationAvoidable}.). $\alpha$ must be small enough to ensure rational coalitions cooperate in the sufficiently likely case that they experience constant temptation $\alpha$. $\omega$ must be large enough to ensure the chance of malicious players affecting the other players is sufficiently small (see Lemma \ref{Lem:SUIP:MaliciousImmune}).
+Although SUIP is not immune to coalitions, it can be made arbitrarily close to immune to coalitions by adjusting the number of indicators $\omega$, marginal termination probability $\alpha$, minimum list length $\beta$, and marginal list termination probability $\gamma$. Given any desired probability $p$ of success satisfying $p < 1$, we can choose values for $\omega$, $\alpha$, $\beta$, and $\gamma$ that ensure running SUIP with at least $t$ rational players results in all rational players learning the secret with probability greater than $p$. Lemma \ref{Lem:SUIP:RatNashCoop} shows that cooperating until the short case is a Nash equilibrium if $\alpha$ is small enough. Lemmas \ref{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound}, \ref{Lem:SUIP:MaxSizeCoalitionsPremptivelyKnowShortRound}, \ref{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret}, \ref{Lem:SUIP:ShortPlayerMayLearnSecretExclusively}, \ref{Lem:SUIP:AllCoalitionsTempted} and \ref{Lem:SUIP:MaxSizeCoalitionsTemptedMore}, cover the various ways the short case allows players to misbehave and Lemmas \ref{Lem:SUIP:NoPlayerLearningSecretIsReducible}, \ref{Lem:SUIP:ShortPlayerLearningSecretExclusivelyIsReducible}, and \ref{Lem:SUIP:HighTemptationAvoidable} show adjusting $\beta$ and $\gamma$ makes these problems sufficiently unlikely. Finally, Lemma \ref{Lem:SUIP:MaliciousImmune} proves SUIP is immune to malicious coalitions if $\omega$ is large enough.
 
-\begin{lemma} By choosing a large enough $\omega$, SUIP is immune to malicious coalitions \label{Lem:SUIP:MaliciousImmune} \end{lemma}
+\begin{lemma} Given a small enough $\lambda$, cooperating until the short round is a Nash equilibrium for rational players and rational coalitions. \label{Lem:SUIP:RatNashCoop} \end{lemma}
 \begin{proof}
-Malicious players will defect before or during the definitive round, because otherwise the other players will have more definitive round shares and will be more likely to learn the secret. In SUIP players defect by sending no round message or by sending a fake round message.
-
-If a player sends no round message then they are marked as non-cooperating by all cooperating players (see Algorithm \ref{alg:SUIP:Player}). If a player sends a fake message then they are detected, with arbitrarily high probability bounded by the verification scheme, and marked non-cooperating by all cooperating players. Coalitions have multiple chances to send a fake message, but the probability of all the fake messages being detected is still arbitrarily high.
-
-A player that has been marked non-cooperating by all cooperating players is effectively absent from the protocol, except the short message may be applied to them. They are sent no messages and the messages they send are discarded. Assuming applying the short message doesn't succeed, the protocol will terminate as if it had started without the non-cooperating players being present because rounds don't depend on information from non-cooperating players in previous rounds.
-
-The probability of the short message being misapplied can be made arbitralily low by choosing a large enough $\omega$ as explained in Section \ref{Sec:SUIP:MinIndicators}. Therefore defectors are detected with arbitrarily high probability and applying the short message to them will not result in players learning the wrong secret with arbitrarily high probability. Therefore malicious players' effect on the protocol is equivalent to the effect of absent players.
+Before the short round rational players and coalitions experience a temptation of at most $\lambda$, because they don't have the $t$ shares necessary to determine if the following round is the definitive round or not. Therefore, before the short round, cooperating is a Nash equilibrium for the same reasons outlined in the equivalent lemma for SBP, Lemma \ref{Lem:SBPRatNash}: the expected payoff for defecting can be made arbitrarily small by decreasing $\lambda$.  
 \end{proof}
 
 \begin{lemma} The short case occurs with probability $(1-\alpha)^\beta \times \frac{\gamma}{\alpha}$ \label{Lem:SUIP:ChanceOfShortCase} \end{lemma}
@@ -515,27 +510,27 @@ The probability of the short message being misapplied can be made arbitralily lo
 In order to reach the short case the protocol must have enough rounds to exceed the minimum list length. This occurs with probability $(1-\alpha)^\beta$. After the minimum list length is exceeded the probability of the definitive round being a short case is its marginal probability over the marginal probability of the definitive round, which is $\frac{\gamma}{\alpha}$. The probability of the short case occuring is their product.
 \end{proof}
 
-\begin{lemma} In the short case, coalitions containing the short player can pre-emptively detect the definitive round \label{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound} \end{lemma}
+\begin{lemma} In the short case, coalitions containing the short player can detect the definitive round just before it occurs \label{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound} \end{lemma}
 \begin{proof}
-If player has no messages to send in the coming round then they know that the short case is occuring, that they are the short player and that the coming round must be the definitive round. When a coalition contains the short player they pre-emptively detect the definitive round in the short case.
+If player has no messages to send in the coming round then they know that the short case is occuring, that they are the short player and that the coming round must be the definitive round. Therefore when a coalition has a player with no more messages to send, the short player, they know the next round must be the definitive round.
 \end{proof}
 
-\begin{lemma} In the short case, coalitions of size $t-1$, or individual players when $t = 2$, can pre-emptively detect the definitive round \label{Lem:SUIP:MaxSizeCoalitionsPremptivelyKnowShortRound} \end{lemma}
+\begin{lemma} In the short case, all coalitions of size $t-1$, or individual players when $t = 2$, can detect the definitive round just before it occurs \label{Lem:SUIP:MaxSizeCoalitionsPremptivelyKnowShortRound} \end{lemma}
 \begin{proof}
 Let $C$ be a set of $t-1$ colluding players. Let $d$ be the short player. Let $r$ be the definitive round, occuring after $d$'s list of messages is exhausted.
 
 Either $d \in C$ or $d \notin C$.
 
-If $d \in C$ then the coalition can pre-emptively detect the definitive round by Lemma \ref{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound}.
+If $d \in C$ then the coalition can detect the definitive round just before it occurs by Lemma \ref{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound}.
 
-If $d \notin C$ then, after round $r-1$, the members of $C$ have enough round messages to determine if the short message will apply if any of the players outside of $C$ defect. When the short case occurs, they will be able to pre-emptively apply the short message to $d$, learn the secret, and defect.
+If $d \notin C$ then, after round $r-1$, the members of $C$ have enough round messages to determine if the short message will apply to any of the players outside of $C$ by simulating the next round. Therefore when the short case does occur they will be able to try to apply the short message to $d$, see that the resulting indicators are all $0$, and learn that the next round is the definitive round.
 
-Therefore a set of $t-1$ colluding players can pre-emptively detect the definitive round even when they do not include the short player.
+A coalition of $t-1$ colluding players can pre-emptively detect the definitive round whether or not they include the short player.
 \end{proof}
-
-\begin{lemma} When $t=2$, no one learns the secret in the short case. \label{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret} \end{lemma}
+ 
+\begin{lemma} When $t=2$ and the short case occurs, no one learns the secret. \label{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret} \end{lemma}
 \begin{proof}
-When $t=2$ all players will pre-emptively detect the definitive round in the short case, by Lemma \ref{Lem:SUIP:MaxSizeCoalitionsPremptivelyKnowShortRound}, and want to defect.
+When $t=2$ all players will pre-emptively detect the definitive round in the short case, by Lemma \ref{Lem:SUIP:MaxSizeCoalitionsPremptivelyKnowShortRound}, and will want to defect.
 
 All players who are not the short player will be able to defect on the definitive round. The short player is unable to defect on the definitive round, because the protocol doesn't place any constraints on their actions. But, because the short player knows all other players will defect on the round after the short player's list runs out, the short player has no incentive to cooperate on the preceeding round. Thus the short player will defect one round before the short case's definitive round.
 
@@ -544,64 +539,75 @@ Thus all players defect before or during the definitive round, meaning no defini
 
 \begin{lemma} By choosing a large enough $\beta$, the probability of all players not learning the secret when $t=2$ can be made arbitrarily small. \label{Lem:SUIP:NoPlayerLearningSecretIsReducible} \end{lemma} 
 \begin{proof}
-As explained in Lemma \ref{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret}, all players may not learn the secret in the short case. But by Lemma \ref{Lem:SUIP:ChanceOfShortCase} the short case has probability that decreases exponentially as $\beta$ increases. Thus we can make the probability of all players not learning the secret arbitrarily small by increasing $\beta$.
+As explained in Lemma \ref{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret}, no player will learn the secret in the short case when $t=2$. But by Lemma \ref{Lem:SUIP:ChanceOfShortCase} the short case has probability that decreases exponentially as $\beta$ increases. Thus we can make the probability of all players not learning the secret arbitrarily small by increasing $\beta$.
 \end{proof}
 
 \begin{lemma} When $t=2$, the short player may learn the secret exclusively. \label{Lem:SUIP:ShortPlayerMayLearnSecretExclusively} \end{lemma} 
 \begin{proof}
-As explained in Lemma \ref{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret}, the short player will defect one round before the definitive round would occur due to the short case. When this round happens to be the definitive round in the normal case and there are 2 remaining rational players, one of which is the short player, the short player will unilaterally defect and learn the secret exclusively.
+As explained in Lemma \ref{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret}, the short player will defect one round before the definitive round would occur due to the short case. When this round happens to be the definitive round in the normal case and there are exactly 2 remaining rational players, one of which is the short player, the short player will unilaterally defect and learn the secret exclusively.
 \end{proof}
 
-\begin{lemma} By choosing a large enough $\beta$, the probability of short player learning the secret exclusively when $t=2$ can be made arbitrarily small. \label{Lem:SUIP:ShortPlayerLearningSecretExclusivelyIsReducible} \end{lemma} 
+\begin{lemma} By choosing a large enough $\beta$, the probability of the short player learning the secret exclusively when $t=2$ can be made arbitrarily small. \label{Lem:SUIP:ShortPlayerLearningSecretExclusivelyIsReducible} \end{lemma} 
 \begin{proof}
-As explained in Lemma \ref{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret}, the short player will defect on the round before they know the short case would occur due to their list running out. In order for the short player to learn the secret exclusively, the round they defect on must be the definitive round due to the normal case. The probability of that occuring is the probability that the protocol ends in the normal case but would have ended in the short case if there had been another round.
+As explained in Lemma \ref{Lem:SUIP:MinimumThresholdAndShortCaseMeansNoOneLearnsSecret}, the short player will defect on the round before they know the short case would occur due to their list running out. As explained in Lemma \ref{Lem:SUIP:ShortPlayerMayLearnSecretExclusively}, in order for the short player to learn the secret exclusively, the round they defect on must be the definitive round due to the normal case. The probability of that occuring is the probability that the protocol ends in the normal case but would have ended in the short case if there had been another round.
 
-If the shortest list has the minimum length $\beta$ then the probability is $(1-\alpha)^{\beta-1} \times \alpha \times \gamma$. If the shortest list does not have minimum length then the probability is $(1-\alpha)^\beta \times (1 - \frac{\gamma}{\alpha}) \times \gamma)$. Together they give an upper bound on the probability of the short player exclusively learning the secret:
+If the shortest list has the minimum length $\beta$ then the probability of the definitive round being the round before the short case would have occured is $(1-\alpha)^{\beta-1} \times \alpha \times \gamma$. If the shortest list does not have the minimum length then the probability is $(1-\alpha)^\beta \times (1 - \frac{\gamma}{\alpha}) \times \gamma)$. Together they give an upper bound on the probability of the short player exclusively learning the secret:
 
-$$(1-\alpha)^{\beta-1} \times (\alpha + (1-\alpha) \times (1 - \frac{\gamma}{\alpha})) \times \gamma$$
+$$\gamma \times (1-\alpha)^{\beta-1} \times (\alpha + (1-\alpha) \times (1 - \frac{\gamma}{\alpha}))$$
 
 Since this upper bound decreases exponentially as $\beta$ increases, we can practically make the probability of the short player exclusively learning the secret arbitrarily small by increasing $\beta$.
 \end{proof}
 
 \begin{lemma} When $t > 2$, for non-colluding rational players, SUIP has constant temptation $\alpha$ \label{Lem:SUIP:NonColludersNotTemptedExceptT2} \end{lemma}
 \begin{proof}
-Each round has a marginal probability $\alpha$ of being the definitive round. Individual rational players can't determine if a round is the definitive round in the normal case until it has finished. They also can't detect the definitive round in the short case unless they are the short player or $t=2$, in which case they can't defect because the protocol places no constraint on their actions.
+Each round has a marginal probability $\alpha$ of being the definitive round. Individual rational players do not have enough indicator shares to determine if a round is the definitive round in the normal case until it has finished. If they are not the short player then they can't detect the definitive round in the short case, because they still believe they are in the normal case and can't simulate applying the short message because $t > 2$. If they are the short player then by the time they can detect the definitive round they are unable to defect, because the short player's actions or lack thereof during the definitive round have no effect on the protocol's outcome.
 
 Therefore, when $t > 2$, non-colluding rational players either can't defect or believe they will learn the secret with probability $\alpha$ if they defect.
 \end{proof}
 
 \begin{lemma} For rational coalitions $C$ up to size $t-2$, SUIP has worst deal maximum temptation $1$ and expected deal maximum temptation $\alpha + (1-\alpha)^{\beta+1} \times \frac{\gamma}{\alpha} \times \frac{|C|}{n}$ \label{Lem:SUIP:AllCoalitionsTempted} \end{lemma}
 \begin{proof}
-If a coalition contains the short player then and the short case occurs they, by Lemma \ref{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound}, they will pre-emptively detect the definitive round. This will allow them to defect and not affect their chances of learning the secret. They encounter a temptation of $1$. If the short player is outside the coalition or the normal case occurs, then the coalition experiences a constant temptation of $\alpha$.
+If a coalition contains the short player and the short case occurs then, by Lemma \ref{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound}, they will pre-emptively detect the definitive round. This will allow them to defect and not affect their chances of learning the secret. They encounter a temptation of $1$. If the short player is outside the coalition or the normal case occurs, then the coalition experiences a constant temptation of $\alpha$.
 
-The dealer assigns the short message to a random player when generating the shares. The probability of a coalition $C$ containing the short player is $\frac{|C|}{n}$. The probability of the short case is $p_{short} = (1-\alpha)^\beta \times \frac{\gamma}{\alpha}$. The worst deal maximum temptation, based on the short case occuring and the short player being in the coalition, is $1$. The expected deal maximum temptation is $1 \times p_{short} \times \frac{|C|}{n} + \alpha \times (1 - p_{short} \times \frac{|C|}{n})$, which expands and re-arranges to $\alpha + (1-\alpha)^{\beta+1} \times \frac{\gamma}{\alpha} \times \frac{|C|}{n}$.
+The dealer assigns the short message to a random player when generating the shares. The probability of a coalition $C$ containing the short player is $\frac{|C|}{n}$. The probability of the short case, by Lemma \ref{Lem:SUIP:ChanceOfShortCase} is $p_{short} = (1-\alpha)^\beta \times \frac{\gamma}{\alpha}$. The worst deal maximum temptation, based on the short case occuring and the short player being in the coalition, is $1$. The expected deal maximum temptation is $1 \times p_{short} \times \frac{|C|}{n} + \alpha \times (1 - p_{short} \times \frac{|C|}{n})$, which expands and re-arranges to $\alpha + (1-\alpha)^{\beta+1} \times \frac{\gamma}{\alpha} \times \frac{|C|}{n}$.
 \end{proof}
 
-\begin{lemma} For rational coalitions of size $t-1$, or individual players when $t=2$, SUIP has worst deal maximum temptation $1$ and expected deal maximum temptation $\alpha + (1-\alpha)^{\beta+1} \times \frac{\gamma}{\alpha}$ when $t > 2$ \label{Lem:SUIP:MaxSizeCoalitionsTemptedMore} \end{lemma}
+\begin{lemma} For rational coalitions of size $t-1$, and individual players when $t=2$, SUIP has worst deal maximum temptation $1$ and expected deal maximum temptation $\alpha + (1-\alpha)^{\beta+1} \times \frac{\gamma}{\alpha}$ when $t > 2$ \label{Lem:SUIP:MaxSizeCoalitionsTemptedMore} \end{lemma}
 \begin{proof}
 By Lemma \ref{Lem:SUIP:MaxSizeCoalitionsPremptivelyKnowShortRound}, coalitions of size $t-1$ can pre-emptively detect the definitive round in the short case. In that case they can defect and still be guaranteeed to learn the secret. The short case is a possible deal, so the worst deal maximum temptation is $1$.
 
 A deal that causes the short case has a maximum temptations of $1$ for the coalition. Otherwise the coalition experiences a constant temptation of $\alpha$. The expected maximum temptation of a deal is the maximum temptation of both cases weighted by their likelihood, which is $1 \times p_{short} + \alpha \times (1-p_{short})$ which expands and re-arranges into $\alpha + (1-\alpha)^{\beta+1} \times \frac{\gamma}{\alpha}$.
 \end{proof}
 
-\begin{lemma} By choosing a large enough $\beta$, the probability of a deal of SUIP having constant temptation $\alpha$ can be made arbitrarily high \label{Lem:SUIP:HighTemptationAvoidable} \end{lemma}
+\begin{lemma} By choosing a large enough $\beta$, the probability of a deal of SUIP having maximum temptation $\alpha$ can be made arbitrarily high \label{Lem:SUIP:HighTemptationAvoidable} \end{lemma}
 \begin{proof}
-The cases were rational players or coalitions can pre-emptively detect SUIP's definitive round are all contained to the short case. In the normal case players always believe the next round is the definitive round with probability $\alpha$.
+The cases where rational players or coalitions can pre-emptively detect SUIP's definitive round, explained in Lemmas \ref{Lem:SUIP:MaxSizeCoalitionsPremptivelyKnowShortRound} and \ref{Lem:SUIP:ShortPlayerCoalitionsPremptivelyKnowShortRound}, are contained to the short case. In the normal case players always believe the next round is the definitive round with probability at most $\alpha$.
 
-By Lemma \ref{Lem:SUIP:ChanceOfShortCase}, the probability of the short case occuring is $(1-\alpha)^\beta \times \frac{\gamma}{\alpha}$. Since this probability decreases exponentially as $\beta$ increases, we can practically make the probability of the short case arbitrarily small. Thereffore we can make the probability of SUIP not having constant temptation $\alpha$ arbitrarily small by increasing $\beta$.
+By Lemma \ref{Lem:SUIP:ChanceOfShortCase}, the probability of the short case occuring is $(1-\alpha)^\beta \times \frac{\gamma}{\alpha}$. Since this probability decreases exponentially as $\beta$ increases, we can practically make the probability of the short case arbitrarily small. Thereffore we can make the probability of a deal of SUIP having maximum temptation $\alpha$ arbitrarily high by increasing $\beta$.
+\end{proof}
+
+\begin{lemma} By choosing a large enough $\omega$, SUIP is immune to malicious coalitions \label{Lem:SUIP:MaliciousImmune} \end{lemma}
+\begin{proof}
+Malicious players will defect before or during the definitive round, because otherwise the other players will have more definitive round shares and will be more likely to learn the secret. In SUIP players defect by sending no round message or by sending a fake round message.
+
+If a player sends no round message then they are marked as non-cooperating by all cooperating players (see Algorithm \ref{alg:SUIP:Player}). If a player sends a fake message then the message verification step detects the forgery with arbitrarily high probability, and the player is marked as non-cooperating by all cooperating players. Coalitions have multiple chances to send a fake message, but the probability of all the fake messages being detected is still arbitrarily high.
+
+A player who has been marked non-cooperating by all cooperating players is effectively absent from the protocol after the current round finishes. The other players attempt to apply the short message to the defector then ignore them. The defactor is sent no messages and the messages they send are discarded. The protocol will terminate as if it had started without the non-cooperating players being present because the outcome of a round doesn't depend on information from players who did not cooperate in previous rounds.
+
+The probability of the short message being misapplied to a defecting player can be made arbitralily low by choosing a large enough $\omega$ as explained in Section \ref{Sec:SUIP:MinIndicators}. Therefore defectors are detected with arbitrarily high probability and applying the short message to them will not result in players learning the wrong secret with arbitrarily high probability. Therefore malicious players' effect on the protocol is equivalent to the effect of absent players.
 \end{proof}
 
 \subsection{Choosing a definitive round with the proper distribution}
 \label{Sec:SUIP:ChooseRound}
 
-Every round must have a marginal probability $\alpha$ of being the definitive round. But once we exceed round $\beta$ there are two ways to terminate: the normal way or due to the shortest list ending. The shortest list has a marginal probability $\gamma$ of terminating and we want an overall $\alpha$ marginal probability of termination. The marginal termination probability for the normal case $x$ should satisfy $\gamma + x \times (1 - \gamma) = \alpha$. Solving for $x$ gives $x = \frac{\alpha - \gamma}{1 - \gamma}$.
+Every round must have a marginal probability $\alpha$ of being the definitive round. But once we exceed round $\beta$ there are two ways to terminate: the normal way and due to the shortest list ending. The shortest list has a marginal probability $\gamma$ of terminating and we want an overall marginal probability $\alpha$ of termination. The marginal termination probability $x$ for the normal case should satisfy $\gamma + x \times (1 - \gamma) = \alpha$. Solving for $x$ gives $x = \frac{\alpha - \gamma}{1 - \gamma}$.
 
 Algorithm \ref{alg:SUIP:DefinitiveRound} details how to choose a definitive round $r$ with an overall geometric distribution, given that we have already generated a random shortest list length $L_c = \beta + RandomGeometric(\gamma)$ and we must satisfy $r < L_c$.
 
 \begin{algorithm}
   \caption{Choosing SUIP's Definitive Round}
   \label{alg:SUIP:DefinitiveRound}
-  \begin{algorithmic}[1]
+  \begin{algorithmic}
     \INPUT The marginal definitive round probability $\alpha$ 
     \INPUT The minimum possible list length $\beta$
     \INPUT The marginal end of list probability $\gamma$ satisfying $\gamma < \alpha$
@@ -622,30 +628,31 @@ Algorithm \ref{alg:SUIP:DefinitiveRound} details how to choose a definitive roun
   \end{algorithmic}
 \end{algorithm}
 
-\subsection{Choosing a Large Enough Number of Indicators $\omega$}
+\subsection{Choosing a Large Enough Number of Indicators $\omega$ to Prevent Malicious Use of the Short Message}
 \label{Sec:SUIP:MinIndicators}
 
-When the short message is applied to the wrong player or in the wrong round, the resulting indicators are effectively random. If they happen to all be 0 then players will accept the wrong secret instead of aborting the protocol. Because malicious coalitions of unbounded players can find these cases, we need to bound the probability of any existing.
+When the short message is applied to the wrong player or in the wrong round, the resulting indicators are effectively random. If they happen to all be 0 then players will accept the wrong secret instead of aborting the protocol. Because malicious coalitions of unbounded players can compute these cases, we need to bound the probability of any existing.
 
-Suppose our goal is to ensure the probability is less than $\frac{1}{c}$ for some value $c$. There is a $\frac{1}{|\mathbb{F}|^\omega}$ chance of $\omega$ indicators coming up 0. If there are $r$ rounds, $n$ players, and the threshold is $t$ then there are $\binom{n}{t} \times t \times r$ ways the short message can be applied. The probability of a bad case existing is thus $\frac{\binom{n}{t} \times t \times r}{|\mathbb{F}|^\omega}$. Solving $\frac{\binom{n}{t} \times t \times r}{|\mathbb{F}|^\omega} < \frac{1}{c}$ for $\omega$ gives $\omega > log_{|\mathbb{F}|} (\binom{n}{t} \times t \times r \times c) = (log_{|\mathbb{F}|} c) + (log_{|\mathbb{F}|} r) + log_{|\mathbb{F}|} (\binom{n}{t} \times t)$.
+Suppose our goal is to ensure the probability is less than $\frac{1}{p}$ for some value $p$. There is a $\frac{1}{|\mathbb{F}|^\omega}$ chance of $\omega$ indicators coming up 0. If there are $r$ rounds, $n$ players, and the threshold is $t$ then there are $\binom{n}{t} \times t \times r$ ways the short message can be applied. The probability of a case malicious players can abuse existing is thus $\frac{\binom{n}{t} \times t \times r}{|\mathbb{F}|^\omega}$. Solving $\frac{\binom{n}{t} \times t \times r}{|\mathbb{F}|^\omega} < \frac{1}{p}$ for $\omega$ gives $\omega > log_{|\mathbb{F}|} (\binom{n}{t} \times t \times r \times p)$.
 
-Our bound for $\omega$ depends on the number of rounds $r$, but this is not ideal since it may ``leak" information about $r$ to the players via $\omega$. Since $r$ is a random variable, we can spend some of our probability bound choosing a high enough cutoff value $r'$. If we choose to allocate a $\frac{1}{c \times 2}$ probability to not exceeding the cutoff and the remaining $\frac{1}{c \times 2}$ probability to ensuring there are no bad cases when we don't exceed the cutoff, then we meet the overall bound of $\frac{1}{c}$. We solve for the cutoff round $r'$ using the fact that $r$ follows a geometric distribution parameterized by $\alpha$: $(1 - \alpha)^{r'-1} \leq \frac{1}{2 \times c}$, which solves to $r' \geq 1 + log_{\frac{1}{1-\alpha}}(2 \times c)$. We get our final bound by updating our previous $r$-dependent bound, feeding in a maximum probability of $\frac{1}{2 \times c}$ and the minimum value of $r'$:
+Our bound for $\omega$ depends on the number of rounds $r$, but this is not ideal since it may ``leak" information about $r$ to the players via $\omega$. Since $r$ is a random variable, we can spend some of our probability bound choosing a high enough cutoff value $r'$. If we choose to allocate a $\frac{1}{p \times 2}$ probability to not exceeding the cutoff and the remaining $\frac{1}{p \times 2}$ probability to ensuring there are no bad cases when we don't exceed the cutoff, then we meet the overall bound of $\frac{1}{p}$. We solve for the cutoff round $r'$ using the fact that $r$ follows a geometric distribution parameterized by $\alpha$: $(1 - \alpha)^{r'-1} \leq \frac{1}{2 \times p}$, which solves to $r' \geq 1 + log_{\frac{1}{1-\alpha}}(2 \times p)$. We get our final bound by updating our previous $r$-dependent bound, feeding in a maximum probability of $\frac{1}{2 \times p}$ and the minimum value of $r'$:
 
-$$\omega > (log_{|\mathbb{F}|} (2 \times c)) + (log_{|\mathbb{F}|} (1 + log_{\frac{1}{1-\alpha}}(2 \times c))) + log_{|\mathbb{F}|} (\binom{n}{t} \times t)$$
+$$\omega > (log_{|\mathbb{F}|} (2 \times p)) + (log_{|\mathbb{F}|} (1 + log_{\frac{1}{1-\alpha}}(2 \times p))) + log_{|\mathbb{F}|} (\binom{n}{t} \times t)$$
 
-For practical cases ($|F| \geq 2^{256}, n \leq 200, \alpha \geq \frac{1}{100}, c \leq 2^{256}$) a large enough value of $\omega$ is 2. For theoretical cases, the minimum number of indicators grows logarithmically against the magnitude or inverse magnitude of the protocol's parameters and $c$. Therefore we can practically achieve an arbitrarily high probability of the short message not being abusable.
+For practical cases ($|F| \geq 2^{256}, n \leq 200, \alpha \geq \frac{1}{100}, p \leq 2^{256}$) a large enough value of $\omega$ is 2. For theoretical cases, the minimum number of indicators grows logarithmically against the magnitude or inverse magnitude of the protocol's parameters and $p$. Therefore we can practically achieve an arbitrarily high probability of the short message not being abusable.
 
-\subsection{Consequences of the Short Case}
+\subsection{Observation and Conjecture about the Short Case's Consequences and Necessity}
 
 The primary complicating factor in running and analyzing SUIP is the existence of the short case. In particular, it is the reason the protocol must have some probability of failing in the presence of rational players who want to cooperate until they learn the secret. A protocol with a short case can't be immune to rational coalitions.
 
-All protocols based around the dealer giving players lists of messages to send will have an equivalent to the short case. This is a consequence of the players using the length of the lists to derive a maximum value for the definitive round. The protocol must sometimes lasts until a round where a player knows it is the definitive round and then that player will want to defect. The protocol has a short case.
-
-Removing the short case from a protocol is not trivial. For example, if you attempt to eliminate the short case by having the dealer recreate shares if it occurs, players will use that knowledge to get better bounds on the maximum value of the definitive round and a new type of short case will be created as a result.
-
-Players need an unbounded amount of entropy when opponents may be unbounded and that entropy must either come from the dealer or the players. It is convenient, and perhaps necessary, for the entropy to come from the dealer in order to allow for verification. But when the entropy comes from the dealer the protocol must have a short case. Whether or not entropy generated by the players can be properly verified, although this is an avenue for future work.
-
 The short case has particularly high costs for the $t=n=2$ case. Every 2-of-2 protocol with a short case must choose between everyone learning the secret in the short case or not learning the wrong secret when the other player is malicious. SUIP prevents a malicious player from convincing the other player to accept the wrong secret. Kohl and Noar's 2-of-2 protocol \cite{kol08} guarantees two rational players will both learn the secret. The trade-off is a consequence of deciding whether or not, when a player appears to defect, the remaining player can check if the short case is occuring. If the remaining player can check for the short case then they can do so before the definitive round starts, learn the secret, stop participating, and thus prevent the short player from learning the secret. If the remaining player can't check for the short case then they can't distinguish between the short case occuring and a malicious player defecting on a non-definitive round.
+
+Any protocol based on a non-interacting dealer giving players lists of messages to send will have an equivalent to the short case. This is a consequence of the players using the length of the lists to derive a maximum value for the definitive round. The protocol must sometimes lasts until a round where a player knows it is the definitive round and then that player will want to defect. When that occurs, the protocol is ending in a short case.
+
+Removing the short case from a protocol is not trivial. For example, if you attempt to eliminate the short case by having the dealer recreate shares until the short case does not occur, players can use that knowledge to get better bounds on the maximum value of the definitive round and a new type of short case is created as a result.
+
+Players need an unbounded amount of entropy when opponents may be unbounded, because otherwise players will sometimes deduce each others' state and break the security of the protocol, and that entropy must either come from the dealer or the players. It is convenient, and perhaps necessary, for the entropy to come from the dealer in order to allow for verification. But when the entropy comes from the dealer the protocol must have a short case. Whether or not entropy generated by the players can be properly verified is an avenue for future work.
+
 
 \subsection{Summary}
 
@@ -659,9 +666,11 @@ We anticipate future work to focus on eliminating the short case or reducing its
 
 \chapter{Asynchronous Broadcast}
 
-In practice, communication is not synchronous. The internet, for example, is inherently asynchronous. Implementations of synchronous protocols are not secure if they use the internet. This chapter presents protocols for and explores the consequences of weakening the synchronous broadcast assumption to asynchronous broadcast.
+In practice, communication is not synchronous. The internet, for example, is based on asynchronous messages. Protocols that assume synchronous broadcast can't be naively deployed over the internet without breaking their security. This chapter presents protocols for and explores the consequences of weakening the synchronous broadcast assumption to asynchronous broadcast.
 
-Unlike synchronous broadcast, asynchronous broadcast does not allow for senders to synchronize their sends. As a consequence, rational players, who have an incentive to wait to receive messages before sending, will tend to deadlock unless the protocol specifies a message ordering. Asynchronous broadcast still assumes reliability, timeliness, and consistency across receivers. If a sender chooses to send a message then all receivers will receive the same message in bounded time. If a sender chooses to send no message, then all receivers will know, in bounded time, no message was sent.
+Unlike synchronous broadcast, asynchronous broadcast does not allow for senders to synchronize their sends. As a consequence, rational players, who have an incentive to wait to receive messages before sending their messages, will tend to deadlock waiting for their rational peers unless the protocol specifies a message ordering.
+
+Asynchronous broadcast still assumes reliability, timeliness, and consistency across receivers. If a sender chooses to send a message then all receivers will receive the same message in bounded time. If a sender chooses to send no message, then all receivers will know, in bounded time, no message was sent.
 
 \section{Limitations of all Asynchronous Protocols}
 
@@ -669,53 +678,56 @@ Asynchronous protocols are more restricted than synchronous protocols, but it is
 
 As shown in Lemma \ref{Lem:Async:ConspicuousMustSacrifice}, asynchronous protocols for conspicuous secrets must ``sacrifice'' at least one player. It is impossible for a protocol to guarantee all rational players will learn the secret, because the last sender would know the secret and have no incentive to send. Inconspicuous protocols can avoid this problem because they allow for the last sender to have the secret but not know it is the secret until other players refuse to send messages in response.
 
-Lemma \ref{Lem:Async:CoalitionsMayPreempt} proves asynchronous protocols are vulnerable to coalitions ``pre-emptively" learning the secret, by pre-sharing messages internally, meaning they learn the secret earlier than any player could have without collusion. Pre-emptively learning the secret allows a coalition to defect earlier, potentially depriving other players of shares and causing them to not learn the secret. As shown in the proof, every coalition has at least a $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$ chance of pre-emptively learning the secret. This lower bound can probably be strengthened significantly, because it is derived under very simple circumstances.
+Lemma \ref{Lem:Async:CoalitionsMayPreempt} proves asynchronous protocols are vulnerable to coalitions ``pre-emptively" learning the secret, by pre-sharing messages internally, meaning they learn the secret earlier than any player could have without collusion. Pre-emptively learning the secret allows a coalition to defect earlier, potentially depriving other players of shares and causing them to not learn the secret. As shown in the proof, every coalition $C$ has at least a $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$ probability of pre-emptively learning the secret. This lower bound can probably be strengthened, because it is derived under very simple circumstances.
 
-Finally, we prove in Lemma \ref{Lem:Async:NoConspGoodRatImmune} that no conspicuous asynchronous protocol is immune to rational coalitions, if more than a strict majority of the players can learn the secret, because of the coalitions ability to pre-emptively learn the secret. This proof does not extend trivially to inconspicuous asynchronous protocols. An inconspicuous protocol can ensure that, by the time a coalition can learn the secret, all players have, but do not yet know they have, the secret's value. A protocol where players fall back to accepting their current potential secret when the protocol ``fails" can be immune to rational coalitions. However, this fallback strategy can be abused by malicious coalitions to cause players to accept an incorrect potential secret. We conjecture a weaker property for inconspicuous asynchronous protocols: either not immune to malicious coalitions or not immune to rational coalitions.
+Finally, we prove in Lemma \ref{Lem:Async:NoConspGoodRatImmune} that no conspicuous asynchronous protocol is immune to rational coalitions, if more than a strict majority of the players can learn the secret, because of the coalition's ability to pre-emptively learn the secret. This proof does not extend trivially to inconspicuous asynchronous protocols. An inconspicuous protocol can ensure that, by the time a coalition can learn the secret, all players have, but do not yet know they have the secret's value. A protocol where players fall back to accepting their current potential secret when the protocol ``fails" can be immune to rational coalitions. However, this fallback strategy can be abused by malicious coalitions to cause players to accept an incorrect potential secret. We conjecture a weaker property for inconspicuous asynchronous protocols: every asynchronous protocol is either doesn't allow a strict majority of the players to learn the secret, is not immune to malicious coalitions, or is not immune to rational coalitions.
+
+\begin{lemma} Asynchronous protocols can be divided into rounds with a single specified sender per round without weakening their security \label{Lem:Async:Roundable} \end{lemma}
+\begin{proof}
+Asynchronous protocols can't rely on players sending simultaneously and they can't detect players choosing to not send simultaneously, because synchronous broadcast is necessary for those capabilities. An asynchronous protocol that specifies several messages to be sent, without specifying an order, can't assume a particular non-overlaping sending order won't occur. Some sending orders may be more secure than others, so a protocol can be modified to require a best order without weakening security. Therefore any asynchronous protocol can be modified such that only one player is expected to send at a time, with a ``round'' per expected message, without weakening its security.
+\end{proof}
 
 \begin{lemma} If all players are rational, the secret is conspicuous, and communication is asynchronous then at least one player will not learn the secret \label{Lem:Async:ConspicuousMustSacrifice} \end{lemma}
 \begin{proof}
 We will prove this result by contradiction. Assume all players learn the secret.
 
-Let $r$ be the first round such that, at the end of round $r$, all players are guaranteed to eventually know the secret even the others stop cooperating. Let $s$ be the expected sender of round $r$'s message.
+By Lemma \ref{Lem:Async:Roundable}, the protocol can be divided into rounds with a single sender per round. Let $r$ be the first round such that, at the end of round $r$, all players are guaranteed to eventually know the secret even if the others stop cooperating. Let $s$ be the expected sender of round $r$'s message.
 
-Because the secret is conspicuous, players know whether or not they have the secret. Therefore a player can simulate the other players defecting in order to learn the secret as soon as they are  guaranteed to eventually know the secret. A player can't have a conspicuous secret and not know it.
+Because the secret is conspicuous, players know whether or not they have the secret. Therefore a player can simulate the other players defecting in order to learn the secret as soon as they are  guaranteed to eventually know the secret. A player can't have a conspicuous secret and not know it. The sender $s$ either has the secret before round $r$ and knows about having it or doesn't have the secret before round $r$ and knows about not having it.
 
-$s$ either has the secret before round $r$ and knows about having it or doesn't have the secret before round $r$ and knows about not having it.
+If $s$ doesn't have the secret before round $r$ then, because $s$ received no information during round $r$ because $s$ was the sole sender, $s$ still does not know the secret after round $r$. But all players know the secret after round $r$, so $s$ must have known the secret before round $r$.
 
-If $s$ doesn't have the secret before round $r$ then, because $s$ received no information during round $r$, $s$ still does not know the secret after round $r$. But all players know the secret after round $r$, so $s$ must have known the secret before round $r$.
+If $s$ knows the secret before round $r$ then $s$ has no incentive to send a correct message during round $r$. The sender $s$ would know the secret and know sending a correct message could only help the other players learn the secret which, because $s$ is rational, $s$ wants to prevent from happening. Therefore $s$ will not send a correct message in round $r$ when they know the secret.
 
-Because $s$ knows the secret before round $r$, $s$ has no incentive to send a correct message during round $r$. $s$ knows the secret and knows sending a correct message can only help the other players learn the secret which, because $s$ is rational, $s$ wants to prevent from happening. Therefore $s$ will not send a correct message in round $r$.
+Since $s$ must have known the secret before round $r$ they would have not sent a correct message. Therefore no players receive new information during round $r$, meaning no players can learn the secret due to round $r$, contradicting the definition of $r$. Contradiction.
 
-Because $s$ will not send a correct message in round $r$, no players receive new information during round $r$. Therefore no players can learn the secret during round $r$, contradicting the definition of $r$.
-
-The assumption that all players learned the secret creates a contradiction.
+The assumption that all players learn the secret creates a contradiction.
 
 At least one player did not learn the secret.
 \end{proof}
 
-\begin{lemma} If all players are rational and communication is asynchronous then rational coalitions have a greater than $\epsilon > 0$ chance of pre-emptively learning the secret \label{Lem:Async:CoalitionsMayPreempt} \end{lemma}
+\begin{lemma} If all players are rational and communication is asynchronous then there is at least a probability of $\epsilon > 0$ of a rational coalition pre-emptively learning the secret \label{Lem:Async:CoalitionsMayPreempt} \end{lemma}
 \begin{proof}
+By Lemma \ref{Lem:Async:Roundable}, the protocol can be divided into rounds with a single sender per round.
 Let $n$ be the number of players.
 Let $C$ be a rational coalition of players, selected randomly, with size less than the threshold $t$.
-Let $r$ be the first round where a player would learn the secret if there were no collusion.
+Let $r$ be the first round where a player would have learned the secret if there were no collusion.
 Let $L$ be the set of learners: players who learn the secret in round $r$.
 Let $s$ be the sender of round $r$'s message.
-
 The sender can not be one of the learners because the sender is receiving no new information during round $r$.
 
 If the sender and at least one of the learners are in the coalition, then the coalition can internally simulate sending round $r$'s message before round $r$ occurs and thereby pre-emptively learn the secret. The probability of this occuring is $\frac{|C|}{n} \times \frac{\binom{n - |C|}{|L|}}{\binom{n - 1}{|L|}}$. This function varies with $L$, which the protocol has some control over. Higher values of $L$ give higher probabilities, so a lower bound for any protocol is setting $L$ to its minimum value: 1. This gives a lower bound probability of $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$, which is independent of the protocol.
 \end{proof}
 
-\begin{lemma} There is no asynchronous protocol for conspicuous secrets that both guarantees more than $ceil(\frac{n}{2})$ of the players learn the secret and is immune to all rational coalitions \label{Lem:Async:NoConspGoodRatImmune} \end{lemma}
+\begin{lemma} There is no asynchronous protocol for conspicuous secrets that both guarantees more than $\lceil \frac{n}{2} \rceil$ of the players learn the secret and is immune to all rational coalitions \label{Lem:Async:NoConspGoodRatImmune} \end{lemma}
 \begin{proof}
-Before a round $r$ a player $p$ has some minimum number $m(r, p)$ of other players that continue cooperating in order for $p$ to learn the secret. If $p$ learns the secret when round $r$ finishes then $m(r, p) = 1$ and $m(r+1, p) = 0$. The number of cooperating players a given player needs can decrease by either 0 or 1 each round, so we can further derive that $m(r-i, p) \leq 1+i$.
+By Lemma \ref{Lem:Async:Roundable}, the protocol can be divided into rounds with a single sender. Before a round $r$ a player $p$ has some minimum number $m(p, r)$ of other players that must continue cooperating in order for $p$ to learn the secret. If $p$ learns the secret when round $r$ finishes then $m(p, r) = 1$, because $p$ must have received a message from the round's sender that allowed $p$ to learn the secret, and $m(p, r+1) = 0$. The number of cooperating players a given player needs can decrease by either 0 or 1 each round, so we can further derive that $m(p, r-i) \leq 1+i$.
 
-Let $m'(r)$ be the minimum value of $m(r, p)$ for any player on round $r$. If at least one player learns the secret and the protocol satisfies the basic correctness requirement that $t-1$ players can't learn the secret then for any $i \in [0, t]$ there will be a round where $m'(r) = i$.
+Let $h(r)$ be the minimum value of $m(p, r)$ for any player on round $r$. If at least one player learns the secret and the protocol satisfies the basic correctness requirement that $t-1$ players can't learn the secret then for any $i \in [0, t]$ there will be a round where $h(r) = i$.
 
-Suppose a rational coalition has size $|C|$ satisfying $1 < |C| < t$. Let $r$ be the smallest round such that $m'(r) = |C|-1$. In round $r$ there is a player who depends on at most $|C|-1$ other players. If that player is in the coalition, and the potential dependees are the other players in the coalition, then the coalition can learn the secret and defect. This leaves at most $n-|C|$ cooperating players, all of whom need at least $|C|-1$ other players to be present in order to learn the secret due to how we choose $r$. If $n < 2 \times |C|$ then they can't learn the secret and will fail.
+Suppose a rational coalition $C$ has size $|C|$ satisfying $1 < |C| < t$. Let $r_0$ be the smallest round such that $h(r) = |C|-1$. In round $r_0$ there is a player who depends on at most $|C|-1$ other players. If that player is in the coalition, and the potential dependees are the other players in the coalition, then the coalition can learn the secret and defect. This leaves at most $n-|C|$ cooperating players, all of whom need at least $|C|-1$ other players to be present in order to learn the secret due to how we choose $r_0$. If $n < 2 |C|$ then they can't learn the secret and will fail.
 
-When the number of players who would have learned the secret if the protocol had been run without the coalition is larger than $ceil(\frac{n}{2})$, they can't all be placed in the coalition. This ensures that the coalition defecting on round $r$ causes fewer players to learn the secret than if the coalition had not been present. Therefore the protocol is not immune to all rational coalitions, because the presence of a rational coalition can cause fewer players to learn the secret.
+When the number of players who would have learned the secret if the protocol had been run without the coalition is larger than $\lceil \frac{n}{2} \rceil$, they can't all be placed in the coalition. This ensures that the coalition defecting on round $r$ causes fewer players to learn the secret than if the coalition had not been present. Therefore the protocol is not immune to all rational coalitions, because the presence of a rational coalition can cause fewer players to learn the secret.
 \end{proof}
 
 
@@ -723,7 +735,7 @@ When the number of players who would have learned the secret if the protocol had
 
 \section{Asynchronous Protocol for Conspicuous Secrets and Bounded Opponents}
 
-Asynchronous protocols require trade-offs. For example, as shown in Lemma \ref{Lem:Async:ConspicuousMustSacrifice}, an asynchronous protocol that works for conspicuous secrets must ``sacrifice'' at least one player (if all players are rational then one will not learn the secret). It is also impossible to guarantee more than a strict majortity of players learn the secret while maintaining immunity against rational coalitions, as shown in Lemma \ref{Lem:Async:NoConspGoodRatImmune}.
+Asynchronous protocols require trade-offs that synchronous protocols don't have to make. For example, as shown in Lemma \ref{Lem:Async:ConspicuousMustSacrifice}, an asynchronous protocol that works for conspicuous secrets must ``sacrifice'' at least one player (if all players are rational then one will not learn the secret). It is also impossible to guarantee more than a strict majority of players learn the secret while maintaining immunity against rational coalitions, as shown in Lemma \ref{Lem:Async:NoConspGoodRatImmune}.
 
 The protocol presented in this section, named ABCP (asynchronous bounded conspicuous protocol), is an asynchronous protocols for conspicuous secrets (and bounded opponents).
 
@@ -731,18 +743,17 @@ The protocol presented in this section, named ABCP (asynchronous bounded conspic
 
 ABCP is like SBP except the definitive round is ``spread out'', meaning different players learn the secret after different rounds. This allows players who send later to be incentivized into participating for one more round by delaying when they learn the secret.
  
-ABCP is based on a sequence of check rounds followed by a block of $n$ definitive rounds during which a player learns shares of the true secret. The start of the block of definitive rounds is different for each player and chosen so that, when they are supposed to send their last message, they will need a specified number of additional shares before they learn the secret. Each round every player sends a message created by a verifiable random function (VRF). Each player takes received messages and offsets them to create round shares. The offset applied is different for each sender and receiver pair. Both the offsets and VRFs are chosen beforehand by the dealer.
+ABCP is based on a sequence of check rounds followed by a block of $n$ definitive rounds during which a player learns shares of the true secret. Players take turns sending messages in a round robin format. The start of the block of definitive rounds is different for each player and chosen so that, when they are supposed to send their last message, they will need a specified number of additional shares before they learn the secret. Each round every player sends a message created by a verifiable random function (VRF). Each player takes received messages and offsets them to create round shares. The offset applied is different for each ordered pair of sender and receiver. Both the offsets and VRFs are chosen beforehand by the dealer.
 
-Before a player's definitive block of rounds the round shares they compute are random but during the player's definitive block of rounds the round shares they compute are the Y coordinates of Shamir shares for the secret with a threshold of $t$, because of how the offsets and VRFs are chosen by the dealer. Players recognize the definitive round by combining the round shares and matching the result against a bit commitment to the secret provided by the dealer.
+Before a player's definitive block of rounds the round shares they compute are random. But the offsets and VRFs are chosen by the dealer to ensure that during the player's definitive block of rounds the round shares they compute are the Y coordinates of Shamir shares for the secret with a threshold of $t$. Players recognize the definitive round by combining the round shares and matching the result against a bit commitment to the secret provided by the dealer. Each player's definitive block of rounds is positioned so that, $\delta$ (the ``share sortage") rounds before the earliest round the player could learn the secret, it is the player's turn to send a message.
 
-See Algorithms \ref{alg:ABCP:Dealer} and \ref{alg:ABCP:Player} and Figures \ref{ex:ABCP} and \ref{img:ex:ABCP} for details.
+See Algorithms \ref{alg:ABCP:Dealer} and \ref{alg:ABCP:Player} and Figure \ref{img:ex:ABCP} for details.
 
 \begin{algorithm}
   \caption{Dealer Protocol for ABCP}
   \label{alg:ABCP:Dealer}
   \begin{algorithmic}
-    \INPUT Finite field $\mathbb{F}$
-    \INPUT Number of shares $n$ and threshold $t$
+    \INPUT Finite field $\mathbb{F}$, number of shares $n$, and threshold $t$
     \INPUT Share shortage $\delta$ satisfying $0 < \delta < t$
     \INPUT Marginal probability of termination $\alpha$
     \INPUT Verifiable random function scheme $VRFS$ and commitment scheme $CS$
@@ -753,12 +764,12 @@ See Algorithms \ref{alg:ABCP:Dealer} and \ref{alg:ABCP:Player} and Figures \ref{
     \STATE Create ordered lists $V$ and $G$ of $n$ public ($V$) and private ($G$) VRFS key pairs
     	$$V_i, G_i = VRFS.NewKeyPair()$$
     \STATE Pick the earliest definitive round of any share $b$ 
-	    $$b = Random(Uniform(n)) + Random(Geometric(\alpha))$$
-    \STATE Compute the starting round $r_i$ of each share's block of definitive rounds such that on round
-  	    $$r_i = b + (i-b-t+\delta+1 \pmod{n})$$
-    \STATE Create $n$ ordered lists $S_i$ of $n$ Shamir shares $S_{i,j}$ with threshold $t$ for the secret
-  	    $$S_i = CreateShamirShares(s, \mathbb{F}, n, t)$$
-  	    $$XOfPoint(S_{i,j}) = j > 0$$
+	    $$b = Random(UniformDistribution([0,n))) + Random(Geometric(\alpha))$$
+    \STATE Compute the starting round $r_i$ satisfying $r_i \geq b$ of each share's block of definitive rounds based on the desired share shortage by also satisfying $r_i + t - 1 - \delta = i \pmod{n}$
+  	    $$r_i = b + ((i-b-t+\delta+1) \text{ } mod \text{ } n)$$
+    \STATE Create $n$ ordered lists $S_i$ of $n$ Shamir shares (points) $S_{i,j}$ with threshold $t$ for the secret
+  	    $$S_i = CreateShamirShares(s, \mathbb{F}, n, t) \text{ } for \text{ } i \in [1, n]$$
+  	    $$XOfPoint(S_{i,j}) = j \text{ } for \text{ } i,j \in [1, n]$$
     \STATE Compute the $n$ ordered lists $Y_i$ of $n$ offsets $Y_{i,j}$
   	    $$Y_{i,j} = VRFS.ValueOf(G_j, r_i + (j-r_i \pmod{n})) + S_{i,j}$$
     \STATE Return the list $R$ of $n$ ABCP shares composed of the commitment, all public keys, share-specific offsets, an index, and a private key
@@ -772,7 +783,7 @@ See Algorithms \ref{alg:ABCP:Dealer} and \ref{alg:ABCP:Player} and Figures \ref{
     \INPUT Finite field $\mathbb{F}$
     \INPUT Total number of shares $n$ and threshold $t$
     \INPUT Verifiable random function scheme $VRFS$ and commitment scheme $CS$
-    \INPUT Share index $i > 0$
+    \INPUT Share index $i \in [1, n]$
     \INPUT VRFS private key $G_i$
     \INPUT Ordered list $V$ of $n$ VRFS public keys
     \INPUT Ordered list $Y_i$ of $n$ offsets
@@ -789,14 +800,14 @@ See Algorithms \ref{alg:ABCP:Dealer} and \ref{alg:ABCP:Player} and Figures \ref{
 	  \ENDIF
 	  \STATE Let $m, w$ be the message value and proof received from $x$ (if any)
 	  \STATE If $x$ sent no message or a message failing $VRFS.Verify(V_j, m, w)$ then mark $x$ as non-cooperating
-	  \STATE If $e$ is marked as non-cooperating then skip to the next round
+	  \STATE If $x$ is marked as non-cooperating then skip to the next round
 	  \STATE Enqueue the point $(j, m + Y_{i,j})$ into $Q$
       \STATE If $Q$ has more than $t$ items then dequeue the oldest item from $Q$
 	  \IF {$Q$ has $t$ items}
 	   	\STATE Let $P$ be the polynomial interpolated from the points in $Q$
 	    \STATE If $CS.Matches(c, P(0))$ then exit with the secret $P(0)$
 	  \ENDIF
-      \STATE Increment $r$
+      \STATE Increment $r$ by $1$
 	\ENDWHILE
   \end{algorithmic}
 \end{algorithm}
@@ -808,60 +819,91 @@ See Algorithms \ref{alg:ABCP:Dealer} and \ref{alg:ABCP:Player} and Figures \ref{
 
 \subsection{Analysis}
 
-ABCP is less performant than SBP. If the number of players is $n$, the threshold is $t$, the marginal definitive round probability is $\alpha$, the share shortage is $\delta$, and the costs of the verifiable random function scheme and Shamir's share scheme are represented as $VRFS$ and $Shamir(t, n)$ then the asymptotic time is $O(VRFS  \times n^2 + Shamir(t, n) \times n)$ for the dealer and $O((n + \frac{1}{\alpha}) \times (VRFS + Shamir(t, t)))$ for the players. The practical costs depend primarily on the efficiency of the implementations of the VRF and Shamir schemes. ABCP's shares each contain $O(n)$ information.
+ABCP is less performant than SBP. If the number of players is $n$, the threshold is $t$, the marginal first definitive round probability is $\alpha$, the share shortage is $\delta$, and the costs of the verifiable random function scheme and Shamir's share scheme are represented as $VRFS$ and $Shamir(t, n)$ then the asymptotic time is $O(VRFS  \times n^2 + (CS + Shamir(t, n)) \times n)$ for the dealer and $O((n + \frac{1}{\alpha}) \times (CS + VRFS + Shamir(t, t)))$ for the players. The practical costs depend primarily on the efficiency of the implementations of the VRF and Shamir schemes. ABCP's shares each contain $O(n)$ information.
 
-ABCP is not coalition immune, as is true for any asynchronous conspicuous protocol by Lemma \ref{Lem:Async:NoConspGoodRatImmune}. In particular, coalitions with size greater than $\delta$ may have enough ``future" shares to defect before they reveal any definitive shares to other players.
+ABCP is immune to malicious coalitions, as shown in Lemma \ref{Lem:ABCP:MalImmune}, because a malicious player can do no more harm than an abstaining player. However, in contrast to SBP, abstaining players can do some harm. Lemma \ref{Lem:ABCP:AbstainBad} shows it is possible for abstaining players to cause other players to not learn the secret. Even though ABCP is immune to malicious coalitions, changing the wrong rational player to a malicious player will decrease the number of other players who learn the secret.
 
-If ABCP is run with $t$ or more rational players then they will learn the secret, even in the presence of malicious players, with arbitrarily high probability. This is a consequence of coalition immunity. We know the malicious players can be treated as absent players and the rational players will cooperate until they learn the secret. Since there are enough cooperating players and they all learn the secret at the same time, the rational players will learn the secret.
+ABCP is not immune to rational coalitions, as is true for any asynchronous conspicuous protocol by Lemma \ref{Lem:Async:NoConspGoodRatImmune}. In particular, rational coalitions with size greater than $\delta$ may have enough ``future" shares to defect before they reveal any definitive shares to other players. The share shortage $\delta$'s value is a trade-off between stronger resilience against rational coalitions and sacrificing fewer players. Coalitions tend to decrease the number of players who learn the secret, although it is also possible for a coalition to \emph{increase} the number of players who learn the secret by saving a colluder from being sacrificed.
 
-\begin{lemma} Rational Coalitions with size greater than $\delta$ may learn the secret early enough for all of its members to defect before the first block of definitive rounds. \end{lemma}
+One interesting property of ABCP is that non-colluding players experience a constant temptation of $0$, as shown in Lemma \ref{Lem:ABCP:SoloTemptNone}. This ideal temptation is possible because some players are sacrificed. Instead of guaranteeing all cooperators learn the secret, ABCP guarantees all defectors do not learn the secret. Non-colluding rational player's optimal strategy is to cooperate, even if $\alpha$ is almost 1.
 
-All of the members of a rational coalition can stop cooperating after any one of them learns the secret. The earlier the secret is learned, the more likely it is that many of the colluders can defect instead of cooperating on important rounds. We already know, from [lemma bla], that all asynchronous protocols allow rational coalitions to potentially learn the secret earlier than any of its members should be able to. But that does not imply the coalition learns the secret early enough to act on the information. This result is stronger, implying the coalition can learn the secret early enough for all of its members to defect before they otherwise would have. 
+If at least $t$ players are present and want to learn the secret, running ABCP ensures at least $1$ of them learns it. This is a consequence of Lemma \ref{Lem:ABCP:SomeDeltaLose}, which shows that if there are at least $t$ cooperating rational players then at most $t-1$ of them are sacrificed and ABCP's immunity to malicious coalitions. Lemma \ref{Lem:ABCP:AllDeltaLose} shows that if all players are cooperating and rational then exactly $\delta$ of them are sacrificed.
 
+\begin{lemma} The marginal probability of a given next round being the definitive round is at most $\lambda$ \label{Lem:ABPC:MarginalAtMostLambda} \end{lemma}
+See Appendix \ref{Appendix:ABCP:Probabilities:MarginalFirstDefinitiveRoundBelowAlpha}.
+
+\begin{lemma} Before the player protocol runs, the probability of a player being sacrificed is independent of their share index \label{Lem:ABCP:FairSacrificeBefore} \end{lemma}
 \begin{proof}
-Assume all players outside of the coalition are cooperating.
+Whether or not the player with index $i$ is sacrificed depends on their index $i$, the first definitive round $b$, and the share shortage $\delta$. After round $b+t-1$ the player with index satisfying $i = b+t-1-\delta \pmod{n}$ will learn the secret. For the following $n-\delta-1$ rounds the ``successful" index increments by $1 \pmod{n}$. The remaining $\delta$ players who have not learned the secret are sacrificed. If the value of $b$ is increased by $1$, the sacrificed indexes also increase by $1 \pmod{n}$. If the value of $b$ increases by $n$, the sacrificed indexes are unaffected.
 
-On some round $r$ the first important share will be sent. The last important share is on round $r+n+t-1$ but, if all players are rational, only round $r+n+t-1-\delta$ will be reached. The first $t-\delta-1$ and final $\delta$ important shares to be sent are not important to their senders. The $n$ other important shares to be sent are important to their senders. On round $r+t-\delta$ the first share important to its sender is sent.
-
-On round $r+t-1$, the sender for that round needs at least $\delta$ shares from future rounds before they will learn the secret. If the sender is colluding, they may already have access to those shares. In that case all members of the coalition will defect on round $r+t-\delta$. Since all players send one message between round $r+t-\delta$ and round $r+t-\delta+n-1$, which would be reached normally, every member of the coalition has managed to avoid sending at least one important message.
-
-Coalitions with size greater than $\delta$ can have a sender on round $r+t-\delta$ and the remaining members may hold the $\delta$ future round shares the sender needs. This circumstance is sufficient, but by no means necessary, to show that some fraction of possible coalitions will learn the secret early enough for all of their members to defect.
+The probability of the first definitive round being at least $r$ and in a given equivalence class is $F^{*}(r) = \frac{1}{n} \times (1-\alpha)^{0 \uparrow (r - n + 1)}$ (see Appendix \ref{Appendix:ABCP:Probabilities:MarginalFirstDefinitiveRoundBelowAlpha}). When $r < n$ this simplifies to $\frac{1}{n}$, meaning the first definitive round has an equal probability of landing in each equivalence class.
 \end{proof}
 
-\begin{lemma} For Non-Colluding Rational Players, the protocol has a constant temptation of $0$ \end{lemma}
+\begin{lemma} By choosing a small enough $\alpha$, the conditional probability of a round's sender being sacrificed, given that the current round has been reached, can be made arbitrarily close to independent \label{Lem:ABCP:FairerDuringWithSmallLambda} \end{lemma}
+See Appendix \ref{Appendix:ABCP:Probabilities:MarginalEquivalenceClassDefinitiveRoundApproaches1OverN}.
+
+\begin{lemma} For Non-Colluding Rational Players, ABCP has a constant temptation of $0$ \label{Lem:ABCP:SoloTemptNone} \end{lemma}
 \begin{proof}
-When a player sends for the final time, they need $\delta$ more shares before they can learn the secret. If they defect instead of sending, other players will stop sending them messages. Since they are not colluding and not being sent shares, they won't be able to access the shares they need. Therefore if they defect they will not learn the secret.
+When a player sends for the final time, the dealer has positioned their definitive shares such that they will need at least $\delta$ more shares before they can learn the secret. If they defect instead of sending, other players will stop sending them messages. Since they are not colluding and not being sent messages from which they can derived shares, they won't be able to access the definitive shares they need. Therefore if they defect they will not learn the secret.
 \end{proof}
 
-This ideal temptation is possible because some players are sacrificed. Instead of guaranteeing all cooperators learn the secret, we have guaranteed all defectors do not learn the secret.
+\begin{lemma}If all players are non-colluding and cooperating until they learn the secret then exactly $n-\delta$ players will learn the secret. \label{Lem:ABCP:AllDeltaLose}\end{lemma}
+\begin{proof}
+When all players cooperate there will be exactly one player who will receive $i$ definitive shares, counting their own, for each $i$ in $[t-\delta, n-1]$. The remaining $t-\delta$ players will receive $n$ definitive shares. This occurs as a consequence of players defecting as they learn the secret and the positioning of the definitive shares by the dealer (see Figure \ref{img:ex:ABCP} for a visual example).
+
+Non-colluding players learn the secret if and only if they receive $t$ or more definitive shares. The range $[t-\delta, n-1]$ contains $n-1-t+1$ values greater than or equal to $t$ and $n \geq t$ so in total there are $(n-1-t+1) + (t-\delta) = n-\delta$ players who will receive enough definitive shares to learn the secret.
+\end{proof}
 
 \begin{lemma} Cooperating is a Nash equilibrium for non-colluding rational players \end{lemma}
 \begin{proof}
 When it is a player's turn to send they can either cooperate or defect. If they defect they can do so by sending an incorrect message or by sending no message. If they send no message then the defection is always detected. If they send an incorrect message then the defection is detected with an arbitrarily high probability determined by the VRFS scheme.
 
-In the case where all players are cooperating a player who is deciding to cooperate this turn expects to not learn the secret, due to being sacrificed, with marginal probability $\frac{\lambda \times \delta}{n}$ and total probability $\frac{\delta}{n}$. A player who decides to defect expects to not learn the secret with arbitrarily high probability, and may or may not prevent other players from learn the secret.
-
+A non-colluding rational player will not learn the secret if they defect, by Lemma \ref{Lem:ABCP:SoloTemptNone}. If they cooperate they will learn the secret with non-zero probability  since the other players are cooperating and only some players are sacrificed (if $\alpha$ is small and all other players are cooperating and non-colluding then, by Lemmas \ref{Lem:ABCP:FairerDuringWithSmallLambda} and \ref{Lem:ABCP:AllDeltaLose}, the probability is approximately $\frac{\delta}{n}$). The payoff of cooperating is larger, so non-colluding rational players will follow the equilibrium strategy of cooperating.
 \end{proof}
 
-\begin{lemma} If all players are rational and non-colluding then exactly $n - \delta$ players learn the secret \end{lemma}
+\begin{lemma}If ABCP is run with $i \in [t,n-t]$ players then the number of players who learn the secret is in $(i-t, i-\delta]$. \label{Lem:ABCP:SomeDeltaLose} \end{lemma}
 \begin{proof}
-When a player sends for the final time, they need $\delta$ more shares. The last player to send will not learn the secret, because they receive 0 more shares and $\delta > 0$. The before last player, who is not the same player because players take turns sending messages, will only learn the secret if $\delta = 1$. Similarly, the before before last player only learns the secret if $\delta \leq 2$. Extrapolating, we see that the $i$'th last sender only learns the secret if $i > \delta$. Therefore exactly the $\delta$ last senders, who are distinct because $\delta < n$, will not learn the secret.
+When a player defects or is absent, they decrease the number of definitive shares that will be received by players who depended upon the defector/absentee by 1. Conversely, if a player is present and sends a correct message they will increase the number of definitive shares that will be received by players who depended upon them by 1. Adding players can only increase the number of players who will learn the secret. Thus we can prove a lower bound on the number of players who learn the secret without considering cases where additional players, on top of the $x$ non-colluding rational players, are present.
+
+First we will show the lower bound. Suppose the protocol is run with $i \in [t,n-t]$ players. For every pair of present players $p_1, p_2$, where $p_1$ would have learned the secret before $p_2$ if all players were present, $p_2$ will give a definitive share to $p_1$. It is possible for $p_1$ to also give a definitive share for $p_2$, but not necessary. This is a consequence of the players learning the secret in the same cyclic order as sending messages. There is a distinct player who will learn at least $j$ definitive shares for each value of $j \in [1, i]$. For example, the player who would have learned the secret first out of the present players, if all absent and present players had been present and cooperating, will receive at least $i$ shares including their own. There are $i-t+1$ values greater than or equal to $t$ in $[1,i]$, so more than $i-t$ players will learn at least $t$ definitive shares, and learn the secret.
+
+The upper bound is a trivial consequence of the fact that a player needs $\delta$ shares when they send their final message. The final $\delta$ senders need more shares than the number of remaining messages, so they don't learn the secret. At most $i-\delta$ players will learn the secret.  
 \end{proof}
 
-The value of $\delta$ is a trade-off between resistance against coalitions and the number of sacrificial players. A higher $\delta$ requires sacrificing more players. A lower $\delta$ increases the number of shares a player has when they send, meaning fewer colluders are needed to pre-emptively learn the secret.
+\begin{lemma}An abstaining player may decrease the number of players who learn the secret by 2. \label{Lem:ABCP:AbstainBad} \end{lemma}
+\begin{proof}
+When a player abstains from participating in the protocol, they decrease the number of definitive shares that will be received by players who depended upon the absentee by 1. If the abstaining player would have learned the secret and the dependent players includes a player who was only receiving $t$ definitive shares then two fewer players will learn the secret.
+
+Consider the case where all players are present, rational, non-colluding, and at least 2 learn the secret. If the before-last player who would have learned the secret abstains then the last player who would have learned the secret will receive one fewer definitive shares. But the last player to learn the secret would only have had $t$ definitive shares, and so they will not learn the secret if the before-last player abstained.
+
+When the before last player would would have learned the secret abstains, both the last and before-last players who would have learned the secret fail to learn the secret.
+\end{proof}
+
+\begin{lemma} ABCP is immune to malicious coalitions \label{Lem:ABCP:MalImmune} \end{lemma}
+\begin{proof}
+The VRF scheme ensures that, when a malicious player does not cooperate, they are detected with arbitrarily high probability. When a defector is detected, the player algorithm ignores them by not sending them messages and discarding any messages they send. Therefore malicious coalitions either cooperate or, with arbitrarily high probability, are ignored and have an effect equivalent to absent players.
+\end{proof}
+
+\subsection{Summary}
+
+ABCP is immune to malicious coalitions and guarantees that, if the number $i$ of non-colluding rational players is larger than $t$, then more than $i-t$ of them will learn the secret. However, ABCP also sacrifices players. If all of the present players are non-colluding and rational then at least $\delta$ of them are sacrificed. The difference between these two bounds is a consequence of the fact that a player choosing to abstain can sometimes prevent another player from learning the secret. ABCP is immune to malicious coalitions. 
+
+As is true of any asynchronous conspicuous protocol, ABCP is not perfect. Making different trade-offs allows different protocols to improve some security aspects at the expense of others. We conjecture that protocols exist that are strictly better in terms of security.
 
 
 
 \section{Asynchronous Protocol for Inconspicuous Secrets and Bounded Opponents}
 
-ABCP, the asynchronous bounded conspicuous protocol presented in the previous section, sacrifices at least one player. As shown in Lemma \ref{Lem:Async:ConspicuousMustSacrifice}, sacrificing a player is a necessary property of any conspicuous asynchronous protocol. This raises the obvious question: is an asynchronous protocol with no necessary sacrifices possible when the secret is not conspicuous? This section answers that question by presenting a protocol, hereafter referred to as ``ABIP'' (asynchronous bounded inconspicuous protocol), that does not require a player to be sacrificed.
+ABCP, the asynchronous bounded conspicuous protocol presented in the previous section, sacrifices players. As shown in Lemma \ref{Lem:Async:ConspicuousMustSacrifice}, sacrificing a player is a necessary property of any conspicuous asynchronous protocol. This raises the obvious question: is an asynchronous protocol with no necessary sacrifices possible when the secret is not conspicuous? This section answers that question by presenting a protocol, hereafter referred to as ``ABIP'' (asynchronous bounded inconspicuous protocol), that does not require a player to be sacrificed.
 
 
 \subsection{Overview}
 
-ABIP is a modified version of SBP, except round shares have a lower threshold and there is not bit commitment. The protocol is divided into a sequence of check rounds followed by a definitive round, during which players learn the secret. Each round is divided into turns where each player sends a message created by a verifiable random function (VRF). Players add messages to sender specific offsets to create round shares. Both the offsets and VRFs are chosen beforehand by the dealer. Before the definitive round the round shares are random but during the definitive round the round shares are the Y coordinates of Shamir shares, with a threshold of $t-1$, for the secret. This property is a consequence of how the offsets and VRFs are chosen by the dealer.
+ABIP is a modified version of SBP, except round shares have a lower threshold and there is no bit commitment. The protocol is divided into a sequence of check rounds followed by a definitive round during which players learn the secret. Each round is divided into turns where each player sends a message created by a verifiable random function (VRF). Players add sender specific offsets to messages from a round to create round shares. Both the offsets and VRFs are chosen beforehand by the dealer. Before the definitive round the round shares are random but the dealer chooses the offsets and VRFS to ensure that during the definitive round the round shares are the Y coordinates of Shamir shares for the secret, with a threshold of $t-1$.
 
-Players recognize the definitive round in two ways. The first method, which we call the ``threshold method", checks if $t$ round shares fit on a polynomial of degree $t-2$. This occurs only, with arbitrarily high probability, during the definitive round because a set of $t$ random points from a finite field $\mathbb{F}$ will, with probability $1 - \frac{1}{|\mathbb{F}|}$, not fit on a polynomial of degree $t-2$. The second method, called the ``recovery method'', is noticing that exactly $t-1$ round shares were broadcast in a round. The first $t-1$ senders of a round must use the recovery method because the other players can use the threshold method, learn the secret, and defect before they broadcast their own round shares.
+Players recognize the definitive round in two ways. The first method, which we call the ``threshold method", checks if $t$ round shares fit on a polynomial of degree $t-2$. This occurs only, with arbitrarily high probability, during the definitive round because a set of $t$ random points from a finite field $\mathbb{F}$ will not fit on a polynomial of degree $t-2$, with probability $1 - \frac{1}{|\mathbb{F}|}$. The second method, called the ``recovery method'', is noticing that exactly $t-1$ round shares were broadcast in a round.
+
+For example, suppose all players are present, they are not colluding, and they are all cooperating until they learn the secret. On the definitive round, after the first $t-1$ messages have been sent, the players who have not yet sent a message during the round will have $t$ definitive shares (including their own) and can use the threshold method to learn the secret. If any of the them then selflessly send their message for the round, then all players can use the threshold method to learn the secret. But if all of the players who have learned the secret without sending a message stop participating then the players who did send a message notice exactly $t-1$ message were sent and use the recovery method to learn the secret.
 
 See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{Ex:ABIP} for more details.
 
@@ -876,8 +918,8 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
     \INPUT Secret $s$ in $\mathbb{F}$
     \OUTPUT $n$ shares
     \STATE Create $n$ VRFS key pairs, one for each player
-    	$$G_i, V_i = VRFS.CreateKeyPair()$$
-    \STATE Generate $n$ shamir shares, with a threshold of $t-1$, for the secret $s$
+    	$$V_i, G_i = VRFS.CreateKeyPair()$$
+    \STATE Generate $n$ Shamir shares, with a threshold of $t-1$, for the secret $s$
     	$$S_i = CreateShamir(s, n, t - 1, \mathbb{F})$$
     \STATE Pick a random round $r$ to be the definitive round
         $$r = Random(Geometric(\alpha))$$
@@ -895,19 +937,18 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
     \INPUT A finite field $\mathbb{F}$
     \INPUT Number of shares $n$ and threshold $t$
     \INPUT Verifiable random function scheme $VRFS$
-    \INPUT Share index $i$, generator $G_i$, all verifiers $V$, all offsets $Y$
+    \INPUT Share index $i \in [1, n]$, generator $G_i$, all verifiers $V$, all offsets $Y$
     \OUTPUT Secret $s$ or Failure
+    \STATE Let $P$ be a function that takes points and returns a polynomial of minimum degree containing those points 
     \STATE Mark all players, identified by indexes in $[1, n]$, including ourselves, as cooperating
     \STATE Let $r = 1$
     \WHILE { true }
-      \STATE If fewer than $t$ players are marked as cooperating then Exit with Failure
-      \STATE Let $S$ be an empty set of points in $\mathbb{F}^2$
-      \STATE Let $P(S)$ evaluate to the polynomial created by interpolating the points in $S$
-      \STATE Include the point $(i, VRFS.ValueOf(G_i, r) + Y_i)$ in $S$
+      \STATE If fewer than $t$ players are marked as cooperating then exit with Failure
+      \STATE Let $S$ be a set of points in $\mathbb{F}^2$ initially containing $(i, VRFS.ValueOf(G_i, r) + Y_i)$
       \FOR {$j$ = 1 to $n$}
-        \STATE If $j = i$ then send the message $VRFS.ValueAndProof(G_i, r)$
-        \STATE Let $a, p$ be the expected message from the player with index $j$
-        \IF {$a, p$ was not received or does not satisfy $VRFS.Verify(V_j, a, p)$}
+        \STATE If $j = i$ then broadcast $VRFS.ValueAndProof(G_i, r)$ to players marked cooperating
+        \STATE Let $a, p$ be the message received from the player with index $j$
+        \IF {player $j$ is marked as not cooperating or $a, p$ was not received or does not satisfy $VRFS.Verify(V_j, a, p)$}
           \STATE Mark player $j$ as not cooperating
         \ELSE
           \STATE Include the point $(j, a + Y_j)$ in $S$
@@ -941,8 +982,8 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
     \subitem $P(x) = 3 \pmod{5}$
     \subitem $S_1 = (1, 3)$, $S_2 = (2, 3)$
     \item Compute the offsets 
-    \subitem $X_1 = 3 - (3^{53} \pmod{77}) \equiv 3 \pmod{5}$
-    \subitem $X_2 = 3 - (3^{37} \pmod{77}) \equiv 2 \pmod{5}$
+    \subitem $Y_1 = 3 - (3^{53} \pmod{77}) \equiv 3 \pmod{5}$
+    \subitem $Y_2 = 3 - (3^{37} \pmod{77}) \equiv 2 \pmod{5}$
     \item Transition from dealer protocol to player protocol 
   \end{itemize}
   \begin{tabular}{|r|r|r|r|r|}
@@ -972,13 +1013,15 @@ See Algorithms \ref{alg:ABIP:Dealer} and \ref{alg:ABIP:Player} and Figure \ref{E
 
 ABIP's performance is similar to SBP's, with identical asymptotic time and space costs. Let the number of players be $n$, the threshold be $t$, the marginal definitive round probability ne $\alpha$, and the costs of the verifiable random function scheme and Shamir's share scheme be represented as $VRFS$ and $Shamir(t, n)$ respectively. The dealer's asymptotic time cost is $O(VRFS \times n + Shamir(t, n))$. The players' asymptotic time cost is $O(\frac{1}{\alpha} \times (n \times VRFS + Shamir(t, n)))$. Each share contains $O(n)$ information, but most of it (the VRF public keys and the offsets) is common to all of the shares. The amount of unique information in each share (the index and the VRF private key) has constant size.
 
-If ABIP is run with $t$ or more non-colluding rational players, by Lemma \ref{Lem:ABIP:t-1Def_Sufficient}, all rational players will learn the secret with arbitrarily high probability. But ABIP is not immune to coalitions. Malicious coalitions with size less than $n-t$ are dealth with by Lemma \ref{Lem:ABIP:SmallMalImmune} but coalitions larger than that size can cause players to accept a random secret by Lemma \ref{Lem:ABIP:LargeMalTricks}. Large enough rational coalitions may prevent other players from learning the secret by Lemma \ref{Lem:ABIP:RatColsCanPrevents}, and any rational coalition may learn the secret early by Lemma \ref{Lem:ABIP:Preempt}.
+If ABIP is run with $t$ or more non-colluding rational players then all rational players will learn the secret with arbitrarily high probability. This is a consequence of Lemmas \ref{Lem:ABIP:t-1Def_Sufficient} and \ref{Lem:ABIP:SoloNash}.  
+
+When there are more than $n-t$ malicious players, ABIP fails catastrophically. The malicious players can cause the other players to accept a random secret by satisfying the conditions of Lemma \ref{Lem:ABIP:LargeMalTricks}. However, malicious coalitions with at most $n-t$ players are dealt with by Lemma \ref{Lem:ABIP:SmallMalImmune}.
+
+ABIP is also not immune to rational coalitions. Large enough rational coalitions may prevent other players from learning the secret by Lemma \ref{Lem:ABIP:RatColsCanPrevents}, and any rational coalition may learn the secret early by Lemma \ref{Lem:ABIP:Preempt}. However, ABIP does not fail catastrophically in the presence of large rational coalitions like it does in the presence of large malicious coalitions because rational coalitions cooperate during non-definitive rounds and thus don't cause the conditions of Lemma \ref{Lem:ABIP:LargeMalTricks} to occur. 
 
 \begin{lemma} If a player knows at least $t-1$ round shares from the current definitive round, they will learn the secret \label{Lem:ABIP:t-1Def_Sufficient} \end{lemma}
 \begin{proof}
-If a player has $t$ or more round shares then they can recognize the definitive round using the threshold method. If a player has exactly $t-1$ round shares and receives no more then they will apply the recovery method and assume the current round is the definitive round.  Therefore, a player with $t-1$ or more definitive round shares will know or assume the current round is the definitive round.
-
-If the current round is the definitive round then, as shown above, all players with $t-1$ round shares will assume it is the definitive round and, since the shares have a threshold of $t-1$, be able to reconstruct the secret.
+If a player has $t$ or more round shares then they can recognize the definitive round using the threshold method. If a player has exactly $t-1$ round shares and receives no more then they will apply the recovery method and assume the current round is the definitive round. Therefore, a player with $t-1$ or more definitive round shares will treat the current round as the definitive round. Also, since the shares have a threshold of $t-1$, they will be able to reconstruct and learn the secret.
 \end{proof}
 
 \begin{lemma} If a players knows fewer than $t-1$ round shares at the end of any round, they will not learn the secret \label{Lem:ABIP:FewSharesNolearn} \end{lemma}
@@ -986,62 +1029,52 @@ If the current round is the definitive round then, as shown above, all players w
 As shown in Algorithm \ref{alg:ABIP:Player}, players abort the protocol without accepting a secret when they have fewer than $t-1$ round shares. 
 \end{proof}
 
-\begin{lemma} If a player knows exactly $t-1$ round shares at the end of a check round, they will incorrectly accept a random value as the secret \label{Lem:ABIP:MissDefSharesLearnWrong} \end{lemma}
+\begin{lemma} If a player knows exactly $t-1$ round shares at the end of a check round, due to other players defecting, they will incorrectly accept a random value as the secret \label{Lem:ABIP:MissDefSharesLearnWrong} \end{lemma}
 \begin{proof}
-If a round ends and a player knows exactly $t-1$ round shares, they will use the recovery method and assume the round was definitive.
-
-In non-definitive rounds the round shares are random. The secret created by combining $t-1$ random shares is also random. Therefore the player will accept a random secret.  
+If a round ends and a player knows exactly $t-1$ round shares, they will use the recovery method and assume the round was definitive. In non-definitive rounds the round shares are random. The secret created by combining $t-1$ random shares is also random. Therefore the player will accept a random secret.
 \end{proof}
 
 \begin{lemma} ABIP has maximum temptation $\alpha$ for non-colluding rational players. \label{Lem:ABIP:SoloTemptation} \end{lemma}
 
 In any given round a non-colluding rational player is either among the first $t-2$ senders, the $t-1$'th sender, or among the remaining $t$'th to $n$'th senders.
 
-If a player is among the first $t-2$ senders and do not send their round message then they will have fewer than $t-1$ round shares and be unable to determine if the round is definitive and unable to reconstruct the round secret. Therefore if they defect they will not learn the secret, so their temptation is $0$.
+If a player is among the first $t-2$ senders and does not send their round message then they will have fewer than $t-1$ round shares and be unable to determine if the round is definitive and unable to reconstruct the round secret. Therefore if they defect they will not learn the secret, so their temptation is $0$.
 
 The $t-1$'th sender in a round has enough shares to reconstruct the round secret but not enough shares to determine if the round is definitive. If they defect they will receive no more round shares, so they will believe the round secret is the true secret with probability $\alpha$ and that is their temptation.
 
-If a player is among the $t$'th to $n$'th senders then they have enough shares to reconstruct the round secret and determine if the round is definitive. When the round is not definitive they can't learn the secret by defecting. When the round is definitive they are not expected to send a valid message, meaning they can't defect, because the other players can use the recovery method to learn the secret. Since they either can't defect or can't learn the secret, their temptation is $0$.
+If a player is among the $t$'th to $n$'th senders then, before they have to send, they have enough shares to reconstruct the round secret and determine if the round is definitive. When the round is not definitive they can't learn the secret by defecting. When the round is definitive they are not expected to send a valid message, meaning they can't defect, because the other players can use the recovery method to learn the secret. Since they either can't defect or can't learn the secret, their temptation is $0$.
 
 All players experience a temptation of $0$, except the $t-1$'th sender who experiences a temptation of $\alpha$.
 
-\begin{lemma} ABIP is immune to malicious coalitions up to size $n-t$ \label{Lem:ABIP:SmallMalImmune} \end{lemma}
-\begin{proof}
-A player can defect by either sending no message or sending an incorrect message. If a player sends no message then they are marked as non-cooperating. If a player sends an incorrect message then they are detected with arbitrarily high probability, based on the VRF scheme. A coalition has multiple chances to defect but all are detected with arbitrarily high probability.
-
-A malicious coalition of size greater than $n-t$ can trick the remaining players into applying the recovery method to a non-definitive round. to assume their current potential secret is the true secret, But coalitions of size $n-t$ can't trigger that case unless some other player defects, which won't occur since they aren't malicious and rational players cooooooooooperate\ldots
-\end{proof}
-
 \begin{lemma} Malicious coalitions with size greater than $n-t$ can convince the other players to accept a random secret \label{Lem:ABIP:LargeMalTricks} \end{lemma}
 \begin{proof}
-When there are fewer than $t$ cooperating players remaining, and players have received at least $t-1$ messages, players assume the others are defecting because the definitive block of rounds is occuring and accept their current candidate secret as the true secret.
-
-A malicious coalition with more than $n-t$ players can choose to cause there to be fewer than $t$ cooperating players remaining. Therefore they can cause the remaining players to incorrectly assume the definitive block of rounds is occuring and accept their current candidate secret.
+When players have received exactly $t-1$ messages, including their own, they assume the others are defecting due to the definitive block of rounds occuring and apply the recovery method. They accept their current candidate secret as the true secret. A malicious coalition with more than $n-t$ players can ensure exactly $t-1$ messages are broadcast during a round. Therefore they can cause the remaining players to incorrectly assume the definitive round is occuring, causing them to accept a random candidate secret.
 \end{proof}
 
 \begin{lemma} By choosing a small enough $\alpha$, cooperating is a Nash equilibrium for non-colluding rational players \label{Lem:ABIP:SoloNash} \end{lemma}
 \begin{proof}
-As shown in Lemma \ref{Lem:ABIP:SoloTemptation}, a non-colluding rational player experiences a maximum temptation of $\alpha$. Their payoff for defecting can be made arbitrarily low by decreasing $\alpha$. If they cooperate until the definitive round they have some fixed non-zero probability of learning the secret, based on the number of other non-colluding rational players and the distribution of colluding rational players. By choosing a small enough $\alpha$ we can guarantee the expected payoff for cooperating is larger.
+Analogous to Lemma \ref{Lem:SBPRatNash} for SBP. A non-colluding rational player experiences a maximum temptation of $\alpha$ by Lemma \ref{Lem:ABIP:SoloTemptation}. Their payoff for defecting can be made arbitrarily small by decreasing $\alpha$ but their payoff for cooperating is non-zero and independent of $\alpha$. By choosing a small enough $\alpha$ we can guarantee the expected payoff for cooperating is larger.
 
 Note that we are implicitely assuming that rational players do not prefer the case where they have no secret but all other players believe an incorrect secret over the case where everyone learns the correct secret (the final sender in a non-definitive round has this option when $n=t$).
+\end{proof}
 
-If $\alpha$ is small enough then a non-colluding rational player's payoff is maximized by following the equilibrium strategy of cooperating.
+\begin{lemma} ABIP is immune to malicious coalitions up to size $n-t$ \label{Lem:ABIP:SmallMalImmune} \end{lemma}
+\begin{proof}
+A player can defect by either sending no message or sending an incorrect message. If a player sends no message then they are marked as non-cooperating. If a player sends an incorrect message then they are detected with arbitrarily high probability, based on the VRF scheme, and marked as non-cooperating. A coalition has multiple chances to defect but all are detected with arbitrarily high probability.
+
+A malicious coalition of size greater than $n-t$ can trick the remaining players into accepting a random secret by lemma \ref{Lem:ABIP:LargeMalTricks}. But, unless a player outside the coalition defects, coalitions of size $n-t$ or less can't use the same technique. But players outside the coalition are rational and will cooperate due to Lemma \ref{Lem:ABIP:SoloNash}. A malicious coalition with size of at most $n-t$ will either cooperate or, with arbitrarily high probability, be ignored.
 \end{proof}
 
 \begin{lemma} If there are at least $t$ non-colluding rational players then all cooperating rational players will learn the secret \label{Lem:ABIP:WorksForEnoughSoloRats} \end{lemma}
 \begin{proof}
 Non-colluding rational players will cooperate until they learn the secret, by Lemma \ref{Lem:ABIP:SoloNash}.
 
-In non-definitive rounds the $t$ cooperating players will all send their message, ensuring everyone who is cooperating has at least $t$ round shares and can determine the round is non-definitive. In the definitive round players may not cooperate, due to learning the secret before they have to send their message. But since we have at least $t-1$ cooperaters we know at least $t-1$ players will send a message, ensuring everyone who is cooperating has at least $t-1$ definitive round shares and will learn the secret by Lemma \ref{Lem:ABIP:t-1Def_Sufficient}. 
+In non-definitive rounds the $t$ cooperating players will all send their message, ensuring everyone who is cooperating has at least $t$ round shares and can determine the round is non-definitive with arbitrarily high probability. In the definitive round players may not cooperate, due to learning the secret before they have to send their message. But since we have at least $t-1$ cooperaters we know at least $t-1$ players will send a message, ensuring everyone who is cooperating has at least $t-1$ definitive round shares and will learn the secret by Lemma \ref{Lem:ABIP:t-1Def_Sufficient}. 
 \end{proof}
 
-\begin{lemma} Rational coalitions may learn the secret earlier than any non-colluding player could. \label{Lem:ABIP:Preempt} \end{lemma}
+\begin{lemma} Rational coalitions may learn the secret earlier, but still during the definitive round, than any non-colluding player could. \label{Lem:ABIP:Preempt} \end{lemma}
 \begin{proof}
-Players can learn the secret when they have $t$ definitive round shares. For a non-colluding player this occurs, at the earliest, after the $t-1$'th turn of the definitive round. But coalition of size at least $c$ can learn the secret after the $t-c$'th turn, which is before the $t-1$'th turn, of the definitive round. This occurs when the player send ordering places $c$ or more colluders at or past the $t-c$'th turn.
-
-The probability of a coalition of size $|C|$ pre-emptively learning the secret is at least the probability of all colluders being placed at or past the $t-1$'th position: $1 - \frac{\binom{t - 1}{|C|}}{\binom{n}{|C|}}$. Note that even this rough lower bound does not meet the general bound of $\frac{|C| \times (|C| - 1)}{n \times (n-1)}$, derived as part of proving Lemma \ref{Lem:Async:CoalitionsMayPreempt}, especially as $n$ increases. There is room for improvement in the general bound or in the protocol.
-
-A coalition has a non-zero chance of pre-emptively learning the secret before any non-colluding player can possibly learn the secret.
+Players can learn the secret when they have $t$ definitive round shares. For a non-colluding player this occurs, at the earliest, after the $t-1$'th turn of the definitive round. But a coalition of size $|C| \geq i \geq 2$ may learn the secret earlier, after the $t-i$'th turn. This occurs when the coalition has $i \in [2, |C|]$ shares with indexes greater than $t-i$, which is always a possibility.
 \end{proof}
 
 \begin{lemma} Rational coalitions with size greater than $n-t+1$ may prevent other players from learning the secret \label{Lem:ABIP:RatColsCanPrevents} \end{lemma}
@@ -1051,13 +1084,9 @@ When a coalition pre-emptively learns the secret, as is possible by Lemma \ref{L
 
 \begin{lemma} Coalitions of size $t-1$, or individual players when $t=2$, learn information about the secret before the protocol starts \end{lemma}
 \begin{proof}
-The secret is stored as $t-1$-of-$n$ shares. Coalitions of size $t-1$, or individual players when $t=2$, can generate $t-1$ round shares for any given round. For any given round, they have enough round shares available to reconstruct the round secret before the protocol even starts.
+The secret is stored as $t-1$-of-$n$ shares. Coalitions of size $t-1$, or individual players when $t=2$, can generate $t-1$ round shares for any given round. For any given round, they have enough round shares available to reconstruct the candidate round secret before the protocol even starts.
 
-The ability to precompute round secrets gives a geometric probability distribution over potential secrets. The round secret of the first round is the true secret with probability $(1-\alpha)^0 \times \alpha$, the round secret of the second round is the true secret with probability $(1-alpha)^1 \times \alpha$, and so forth.
-
-The geometric distribution over possible secrets can be combined with the player's original distribution $D$ to create a distribution $D'$ with less entropy. In practic the geometric distribution will already have significantly less entropy than $D$, which is likely to be a uniform distribution over a huge finite field, especially because potential secrets are not guaranteed to be unique.
-
-Because of the ability to compute a distribution for the secret with less entropy, coalitions of size $t-1$, or invidual players when $t=2$, learn information about the secret as soon as they receive their shares.
+The ability to precompute round secrets gives a geometric probability distribution over potential secrets. The round secret of the first round is the true secret with probability $(1-\alpha)^0 \times \alpha$, the round secret of the second round is the true secret with probability $(1-\alpha)^1 \times \alpha$, and so forth. For practical values of $\alpha$ this distribution contains significantly less entropy than a uniform distribution over all possible secrets, meaning the ability to precompute candidate round secrets reveals information about the secret.
 \end{proof}
 
 \subsection{Summary}
@@ -1069,21 +1098,13 @@ ABIP is not coalition immune. Although malicious coalition with size less than $
 
 
 
-\chapter{future work}
+\chapter{Future Work}
 
-The asynchronous unbounded case is not solved.
+There are many avenues for future work within the rational secret sharing problem.
 
-Increase the efficiency of the synchronous protocol.
+There is a vast amount of area available for protocols covering different cases. This paper did not present an asynchronous protocol for unbounded opponents, or cover any protocol that did not assume reliable, timely communication where players know other players were not given a different message. Each of these cases contains interesting and unsolved problems. There are also intermediate cases that may have practical relevance. For example, in practice it may be practical to achieve ``partial" synchronous broadcast, meaning a limited number or subset of players can broadcast synchronously, but not fully synchronous broadcast. It should be possible to create partially synchronous protocols that are more secure than any asynchronous protocols.
 
-The asynchronous protocols have several areas where improvement should be possible.
-
-The unbounded protocol may not be optimal.
-
-Is there a way to generate valid shares each round from independent seeds instead of having to generate random shares and targeting a single round? Would make things more convenient.
-
-What are the effects of partial synchronization?
-
-What are the effects of losing the other communication assumptions like reliability and cross-consistency?
+Of course, there is also future work within the cases covered by this paper. We presented two asynchronous protocols but they make subjective trade-offs and may not be optimal even within the confines of those trade-offs. We presented a synchronous unbounded protocol but it has a pathological case that might be eliminated by, for example, a method for players to generate entropy in a verifiable way. We demonstrated that bounds existed in several cases, but did not attempt to tighten them. For example, the lower bound on the probability of a coalition pre-emptively learning the secret, regardless of what asynchronous protocol was used and derived in Lemma \ref{Lem:Async:CoalitionsMayPreempt}, can be trivially improved.
 
 
 
@@ -1091,14 +1112,112 @@ What are the effects of losing the other communication assumptions like reliabil
 \chapter{Conclusion}
 
 
+\appendix
+\chapter{Calculating Probability Distributions related to ABCP }
+\label{Appendix:ABCP:Probabilities}
 
-\chapter{Appendix - List of Definitions}
+The notation $a \uparrow b$ means $max(a, b)$. The $\uparrow$ operator has precendence between addition and multiplication. For example, $1 + 2 \uparrow 3 \times 4 = 1 + max(2, 3 \times 4) = 13$.
 
-\begin{itemize}
-  \item 'Efficient': A computation is efficient if it can be done in a practical amount of time. Essentially corresponds to polynomial time with respect to the input/key sizes. For fixed-size cases, seconds=efficient, centuries=inefficient is a reasonable rule of thumb.
-  \item Knows: Can efficiently compute. If you know the prime factors then you know the product.
-  \item Learns: Efficiently computes. Quick sort learns the sorted list.
-\end{itemize}
+\section{Probability Distribution of First Definitive Round}
+\label{Appendix:ABCP:Probabilities:FirstDefinitiveRound}
+
+The first definitive round of ABCP is generated by adding a geometric distribution parameterized by $\alpha$ to a uniform distribution over $(0, n]$. Its probability distribution is represented here by the function $F$ and can be simplified as follows:
+
+\begin{align*}
+F(r)
+  &= \sum_{i=0 \uparrow (r-n+1)}^r \frac{1}{n} \times \alpha \times (1-\alpha)^i
+\\&= \frac{\alpha}{n} \times \frac{(1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1}}{1 - (1-\alpha)}
+\\&= \frac{1}{n} \times ((1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1})
+\end{align*}
+
+\section{Marginal Probability Distribution of First Definitive Round Never Exceeds $\alpha$}
+\label{Appendix:ABCP:Probabilities:MarginalFirstDefinitiveRoundBelowAlpha}
+
+During ABCP players believe that the definitive round will be the next round with some probability. The marginal probability of the definitive round being the next round, given that all previous rounds were not the definitive round, is represented here by the function $F'$. We simplify $F'$ in order to show that it is never larger than $\alpha$.
+
+\begin{align*}
+F'(r)
+  &= \frac{F(r)}{\sum_{i=r}^{\infty} F(i)}
+\\&= \frac{(1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1}}{\sum_{i=r}^{\infty} ((1-\alpha)^{0 \uparrow (i-n+1)} - (1-\alpha)^{i+1})}
+\\&= \frac{(1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1}}{(\sum_{i=r-n+1}^{-1} (1-\alpha)^0) + (\sum_{i=r \uparrow (r-n+1)}^{\infty} (1-\alpha)^i) - (\sum_{i=0}^{\infty} (1-\alpha)^{i+1})}
+\\&= \frac{(1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1}}{(0 \uparrow (-1 - (r-n+1) + 1)) + (\frac{(1-\alpha)^{0 \uparrow (r-n+1)}}{1 - (1-\alpha)}) - (\frac{(1-\alpha)^{r+1}}{1 - (1-\alpha)})}
+\\&= \alpha \times \frac{(1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1}}{\alpha \times (0 \uparrow -(r-n+1)) + (1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1}}
+\end{align*}
+
+Case 1: $r-n+1 \geq 0$
+\begin{align*}
+F'(r)
+  &= \alpha \times \frac{(1-\alpha)^{r-n+1} - (1-\alpha)^{r+1}}{\alpha \times 0 + (1-\alpha)^{r-n+1} - (1-\alpha)^{r+1}}
+\\&= \alpha \times \frac{(1-\alpha)^{-n} - (1-\alpha)^{0}}{(1-\alpha)^{-n} - (1-\alpha)^{0}}
+\\&= \alpha
+\\&\leq \alpha
+\end{align*}
+
+Case 2: $r-n+1 \leq 0$
+\begin{align*}
+F'(r)
+  &= \alpha \times \frac{(1-\alpha)^0 - (1-\alpha)^{r+1}}{\alpha \times -(r-n+1) + (1-\alpha)^0 - (1-\alpha)^{r+1}}
+\\&= \alpha \times \frac{1 - (1-\alpha)^{r+1}}{\alpha \times -(r-n+1) + 1 - (1-\alpha)^{r+1}}
+\\&= \alpha \times (1 + \frac{-\alpha \times -(r-n+1)}{\alpha \times -(r-n+1) + 1 - (1-\alpha)^{r+1}})
+\\&\leq \alpha
+\end{align*}
+
+\section{Marginal Probability of Equivalence Classes of First Definitive Round Limits to $\frac{1}{n}$ as $\alpha$ Approaches $0$}
+\label{Appendix:ABCP:Probabilities:MarginalEquivalenceClassDefinitiveRoundApproaches1OverN}
+
+The value of the first definitive round, modulo $n$, is important for determining which players are sacrificed. The probability of the first definitive round being in the same equivalence class, and at least as large, as a given round $r$ is represented here by $F^{*}$. We simplify $F^{*}$ for future use. 
+
+\begin{align*}
+F^{*}(r)
+  &= \sum_{i=0}^{\infty} F(r + i \times n)
+\\&= \frac{1}{n} \times \sum_{i=0}^{\infty} ((1-\alpha)^{0 \uparrow (r + i \times n - n + 1)} - (1-\alpha)^{r + i \times n + 1})
+\\&= \frac{1}{n} \times (((1-\alpha)^{0 \uparrow (r + 0 \times n - n + 1)}) + (\sum_{i=1}^{\infty} (1-\alpha)^{0 \uparrow (r + i \times n - n + 1)}) - (\sum_{i=0}^{\infty} (1-\alpha)^{r + i \times n + 1})))
+\\&= \frac{1}{n} \times (1-\alpha)^{0 \uparrow (r - n + 1)}
+\end{align*}
+
+
+With $F^{*}$ we can determine how likely each equivalence class is as the protocol progresses. The probability, given that round before a given round $r$ were not definitive, of the definitive round being in the same equivalence class as $r+e \pmod{n}$ is represented here by $F^{*'}$. We simplify $F^{*'}$ and show that, as $\alpha$ decreases, it approaches $\frac{1}{n}$.
+
+\begin{align*}
+F^{*'}(r, e)
+  &= \frac{F^{*}(r+e)}{\sum_{i=0}^{n-1} F^{*}(r+i)}
+\\&= \frac{(1-\alpha)^{0 \uparrow (r + e - n + 1)}}{\sum_{i=0}^{n-1} (1-\alpha)^{0 \uparrow (r + i - n + 1)}}
+\\&= \frac{(1-\alpha)^{0 \uparrow (r + e - n + 1)}}{\sum_{i=r-n+1}^{r} (1-\alpha)^{0 \uparrow i}}
+\\&= \frac{(1-\alpha)^{0 \uparrow (r + e - n + 1)}}{\sum_{i=r-n+1}^{-1} (1-\alpha)^0 + \sum_{i=0 \uparrow {r-n+1}}^{r} (1-\alpha)^i}
+\\&= \frac{(1-\alpha)^{0 \uparrow (r + e - n + 1)}}{0 \uparrow (-1 -(r-n+1) + 1) + \frac{(1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1}}{1-(1-\alpha)}}
+\\&= \alpha \times \frac{(1-\alpha)^{0 \uparrow (r + e - n + 1)}}{\alpha \times (0 \uparrow -(r-n+1)) + (1-\alpha)^{0 \uparrow (r-n+1)} - (1-\alpha)^{r+1}}
+\end{align*}
+
+Case 1: $r-n+1 \geq 0$ 
+\begin{align*}
+lim_{\alpha \rightarrow^{+} 0} F^{*'}(r, e)
+  &= lim_{\alpha \rightarrow^{+} 0} \alpha \times \frac{(1-\alpha)^{r + e - n + 1}}{\alpha \times 0 + (1-\alpha)^{r-n+1} - (1-\alpha)^{r+1}}
+\\&= lim_{\alpha \rightarrow^{+} 0} \alpha \times \frac{(1-\alpha)^{e - n}}{(1-\alpha)^{-n} - 1}
+\\&= lim_{\alpha \rightarrow^{+} 0} \frac{\alpha \times (1-\alpha)^e}{1 - (1-\alpha)^n}
+\\&= lim_{\alpha \rightarrow^{+} 0} \frac{(1-\alpha)^e + \alpha \times -e \times (1-\alpha)^{e-1}}{0 - -n \times (1-\alpha)^{n-1}}
+\\&= \frac{(1-0)^e + 0 \times -e \times (1-0)^{e-1}}{0 - -n \times (1-0)^{n-1}}
+\\&= \frac{1}{n}
+\end{align*} 
+
+Case 2: $r-n+1 \leq 0 \leq r-n+1+e$ 
+\begin{align*}
+lim_{\alpha \rightarrow^{+} 0} F^{*'}(r, e)
+  &= lim_{\alpha \rightarrow^{+} 0} \alpha \times \frac{(1-\alpha)^{r + e - n + 1}}{\alpha \times -(r-n+1) + (1-\alpha)^0 - (1-\alpha)^{r+1}}
+\\&= lim_{\alpha \rightarrow^{+} 0} \frac{\alpha \times (1-\alpha)^{r + e - n + 1}}{1 + \alpha \times -(r-n+1) - (1-\alpha)^{r+1}}
+\\&= lim_{\alpha \rightarrow^{+} 0} \frac{(1-\alpha)^{r + e - n + 1} + \alpha \times -(r + e - n + 1) \times (1-\alpha)^{r + e - n}}{0 + -(r-n+1) - -(r+1) \times (1-\alpha)^r}
+\\&= \frac{(1-0)^{r + e - n + 1} + 0 \times -(r + e - n + 1) \times (1-0)^{r + e - n}}{0 + -(r-n+1) - -(r+1) \times (1-0)^r}
+\\&= \frac{1}{n}
+\end{align*} 
+
+Case 3: $r-n+1+e \leq 0$ 
+\begin{align*}
+lim_{\alpha \rightarrow^{+} 0} F^{*'}(r, e)
+  &= lim_{\alpha \rightarrow^{+} 0} \alpha \times \frac{(1-\alpha)^0}{\alpha \times -(r-n+1) + (1-\alpha)^0 - (1-\alpha)^{r+1}}
+\\&= lim_{\alpha \rightarrow^{+} 0} \frac{\alpha}{\alpha \times -(r-n+1) + 1 - (1-\alpha)^{r+1}}
+\\&= lim_{\alpha \rightarrow^{+} 0} \frac{1}{-(r-n+1) + 0 - -(r+1) \times (1-\alpha)^r}
+\\&= \frac{1}{-(r-n+1) + (r+1) \times (1-0)^r}
+\\&= \frac{1}{n}
+\end{align*} 
 
 \bibliographystyle{plain}
 \bibliography{../../Refers/_refs}
