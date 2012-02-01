@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 ///<summary>Modular integers with associated arithmetic.</summary>
 [DebuggerDisplay("{ToString()}")]
-public struct ModInt : IEquatable<ModInt> {
+public struct ModInt : IEquatable<ModInt>, IFiniteField<ModInt> {
     public readonly BigInteger Modulus;
     public readonly BigInteger Value;
 
@@ -90,10 +90,10 @@ public struct ModInt : IEquatable<ModInt> {
         var t = st.Item2;
         return Tuple.Create(t, s - q * t);
     }
-    public ModInt MultiplicativeInverse() {
-        Contract.Requires(Value != 0);
-        Contract.Ensures(Contract.Result<ModInt>() * this == 1);
-        return From(ExtendedGCD(Value, Modulus).Item1, Modulus);
+    public ModInt MultiplicativeInverse {
+        get {
+            return From(ExtendedGCD(Value, Modulus).Item1, Modulus);
+        }
     }
 
     public bool Equals(ModInt other) {
@@ -111,5 +111,44 @@ public struct ModInt : IEquatable<ModInt> {
 
     public override string ToString() {
         return Value + " (mod " + Modulus + ")";
+    }
+
+    public ModInt Zero { get { return new ModInt(0, this.Modulus); } }
+    public ModInt One { get { return new ModInt(1, this.Modulus); } }
+
+    public ModInt Plus(ModInt other) {
+        return this + other;
+    }
+
+    public ModInt Times(ModInt other) {
+        return this * other;
+    }
+
+    public ModInt AdditiveInverse { get { return -this; } }
+
+    public string SequenceRepresentationItem {
+        get { return this.Value.ToString(); }
+    }
+
+    public string SequenceRepresentationSuffix {
+        get { return " (mod " + this.Modulus.ToString() + ")"; }
+    }
+
+    public ModInt Random(ISecureRandomNumberGenerator rng) {
+        return new ModInt(rng.GenerateNextValueMod(this.Modulus), this.Modulus);
+    }
+
+
+    public BigInteger FieldSize {
+        get { return Modulus; }
+    }
+
+
+    public BigInteger ToInt() {
+        return this.Value;
+    }
+
+    public ModInt FromInt(BigInteger i) {
+        return Zero + i;
     }
 }

@@ -51,11 +51,12 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ProtocolTest.cs" />
-    <Compile Include="ModIntPolynomialTest.cs" />
+    <Compile Include="ProtocolSUIPTest.cs" />
+    <Compile Include="ProtocolABIPTest.cs" />
+    <Compile Include="ProtocolSBPTest.cs" />
+    <Compile Include="PolynomialTest.cs" />
     <Compile Include="ModIntTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ShamirSecretShareTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ThesisRationalSharing\ThesisRationalSharing.csproj">

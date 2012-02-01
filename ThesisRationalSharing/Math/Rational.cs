@@ -5,7 +5,7 @@ using System.Numerics;
 
 ///<summary>An arbitrary-precision rational number.</summary>
 [DebuggerDisplay("{ToString()}")]
-public struct Rational : IEquatable<Rational>, IComparable<Rational> {
+public struct Rational : IEquatable<Rational>, IComparable<Rational>, IField<Rational> {
     private readonly BigInteger _numerator;
     private readonly BigInteger _denominator;
 
@@ -161,6 +161,38 @@ public struct Rational : IEquatable<Rational>, IComparable<Rational> {
         return new Rational(value, 1);
     }
 
+
+    Rational IField<Rational>.Zero {
+        get { return Rational.Zero; }
+    }
+
+    Rational IField<Rational>.One {
+        get { return Rational.One; }
+    }
+
+    public Rational Plus(Rational other) {
+        return this + other;
+    }
+
+    public Rational Times(Rational other) {
+        return this * other;
+    }
+
+    Rational IField<Rational>.AdditiveInverse {
+        get { return -this; }
+    }
+
+    Rational IField<Rational>.MultiplicativeInverse {
+        get { return 1/this; }
+    }
+
+    string IField<Rational>.SequenceRepresentationItem {
+        get { return ToString(); }
+    }
+
+    string IField<Rational>.SequenceRepresentationSuffix {
+        get { return ""; }
+    }
 }
 public static class RationalExtensions {
     ///<summary>Determines the integral result of rounding the rational towards 0.</summary>

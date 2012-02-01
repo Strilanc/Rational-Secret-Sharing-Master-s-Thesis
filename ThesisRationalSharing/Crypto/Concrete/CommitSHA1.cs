@@ -8,7 +8,7 @@ using System.Diagnostics.Contracts;
 
 ///<remarks>Example implementation only. Security vulnerabilities are present.</remarks>
 [DebuggerDisplay("{ToString()}")]
-public class CommitSHA1 : ICommitment {
+public class CommitSHA1 : ICommitment<ModInt>, ICommitment<BigInteger> {
     private readonly byte[] _hash;
 
     public CommitSHA1(byte[] hash) {
@@ -34,10 +34,17 @@ public class CommitSHA1 : ICommitment {
     public override string ToString() {
         return String.Format("sha1(?) == 0x" + String.Join("", _hash.Select(b => b.ToString("X"))));
     }
+
+    public bool Matches(ModInt value) {
+        return Matches(value.Value);
+    }
 }
 
-public class CommitSHA1Scheme : ICommitmentScheme {
-    public ICommitment Create(BigInteger value, ISecureRandomNumberGenerator rng) {
+public class CommitSHA1Scheme : ICommitmentScheme<BigInteger>, ICommitmentScheme<ModInt> {
+    public ICommitment<BigInteger> Create(BigInteger value, ISecureRandomNumberGenerator rng) {
         return CommitSHA1.FromValue(value);
+    }
+    public ICommitment<ModInt> Create(ModInt value, ISecureRandomNumberGenerator rng) {
+        return CommitSHA1.FromValue(value.Value);
     }
 }

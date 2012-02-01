@@ -8,15 +8,17 @@ using System.Diagnostics;
 
 ///<remarks>Example implementation only. Security vulnerabilities are present.</remarks>
 [DebuggerDisplay("{ToString()}")]
-public class RSA : IPublicKeyCryptoScheme<RSA.Key, RSA.Key, BigInteger>, IVerifiableRandomFunctionScheme<RSA.Key, RSA.Key, BigInteger> {
+public class VRF_RSA : IVerifiableRandomFunctionScheme<VRF_RSA.Key, VRF_RSA.Key, BigInteger, ModInt> {
     public readonly BigInteger P;
     public readonly BigInteger Q;
+    public readonly ModInt VRFValueField;
 
-    public RSA(BigInteger p, BigInteger q) {
+    public VRF_RSA(BigInteger p, BigInteger q, ModInt VRFValueField) {
         Contract.Requires(p > 1);
         Contract.Requires(q > 1);
         this.P = p;
         this.Q = q;
+        this.VRFValueField = VRFValueField;
     }
 
     [DebuggerDisplay("{ToString()}")]
@@ -37,7 +39,7 @@ public class RSA : IPublicKeyCryptoScheme<RSA.Key, RSA.Key, BigInteger>, IVerifi
         }
     }
 
-    public Tuple<Key, Key> GeneratePublicPrivateKeyPair(ISecureRandomNumberGenerator rng) {
+    public Tuple<Key, Key> CreatePublicPrivateKeyPair(ISecureRandomNumberGenerator rng) {
         BigInteger g = 3;
         BigInteger m = 993;
         BigInteger x = rng.GenerateNextValueMod(m - 1) + 1;
@@ -48,33 +50,25 @@ public class RSA : IPublicKeyCryptoScheme<RSA.Key, RSA.Key, BigInteger>, IVerifi
         do {
             e = rng.GenerateNextValueMod(t - 2) + 2;
         } while (BigInteger.GreatestCommonDivisor(e, t) != 1);
-        var d = new ModInt(e, t).MultiplicativeInverse().Value;
+        var d = new ModInt(e, t).MultiplicativeInverse.Value;
         var pub = new Key(n, e);
         var priv = new Key(n, d);
         return Tuple.Create(pub, priv);
     }
 
-    public BigInteger PrivateEncrypt(Key privateKey, BigInteger plain) {
-        return privateKey.Process(plain);
-    }
-
-    public BigInteger PublicDecrypt(Key publicKey, BigInteger cipher) {
-        return publicKey.Process(cipher);
-    }
-    public override string ToString() {
-        return "RSA: P = " + P + ", Q = " + Q;
-    }
-
-    public Tuple<RSA.Key, RSA.Key> CreatePublicPrivateKeyPair(ISecureRandomNumberGenerator rng) {
-        return GeneratePublicPrivateKeyPair(rng);
-    }
-
-    public ProofValue<BigInteger> Generate(RSA.Key key, BigInteger input, BigInteger range) {
+    public ProofValue<BigInteger, ModInt> Generate(Key key, BigInteger input) {
         var r = key.Process(input);
-        return new ProofValue<BigInteger>(r, r % range);
+        return new ProofValue<BigInteger, ModInt>(r, ModInt.From(r, VRFValueField.Modulus));
+    }
+    public bool Verify(Key key, BigInteger input, ProofValue<BigInteger, ModInt> output) {
+        return input == key.Process(output.Proof) && output.Value.Value == output.Proof % output.Value.Modulus;
     }
 
-    public bool Verify(RSA.Key key, BigInteger input, BigInteger range, ProofValue<BigInteger> output) {
-        return input == key.Process(output.Proof) && output.Value == output.Proof % range;
+    public override string ToString() {
+        return "VRF for F = Z mod " + VRFValueField.Modulus + " using RSA with P = " + P + ", Q = " + Q;
+    }
+
+    public ProofValue<BigInteger, ModInt> RandomMaliciousValue(ISecureRandomNumberGenerator rng) {
+        return new ProofValue<BigInteger, ModInt>(rng.GenerateNextValueMod(P * Q), new ModInt(rng.GenerateNextValueMod(VRFValueField.Modulus), VRFValueField.Modulus));
     }
 }

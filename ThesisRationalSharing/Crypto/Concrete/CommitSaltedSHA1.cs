@@ -8,7 +8,7 @@ using System.Diagnostics.Contracts;
 
 ///<remarks>Example implementation only. Security vulnerabilities are present.</remarks>
 [DebuggerDisplay("{ToString()}")]
-public class CommitSaltedSHA1 : ICommitment {
+public class CommitSaltedSHA1 : ICommitment<BigInteger> {
     private readonly byte[] _hash;
     private readonly byte[] _salt;
 

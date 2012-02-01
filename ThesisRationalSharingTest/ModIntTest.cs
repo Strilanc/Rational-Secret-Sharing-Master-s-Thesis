@@ -91,10 +91,10 @@ namespace ThesisRationalSharingTest {
 
         [TestMethod()]
         public void MultiplicativeInverseTest() {
-            Assert.IsTrue(new ModInt(1, 5).MultiplicativeInverse() == 1);
-            Assert.IsTrue(new ModInt(2, 5).MultiplicativeInverse() == 3);
-            Assert.IsTrue(new ModInt(3, 5).MultiplicativeInverse() == 2);
-            Assert.IsTrue(new ModInt(4, 5).MultiplicativeInverse() == 4);
+            Assert.IsTrue(new ModInt(1, 5).MultiplicativeInverse == 1);
+            Assert.IsTrue(new ModInt(2, 5).MultiplicativeInverse == 3);
+            Assert.IsTrue(new ModInt(3, 5).MultiplicativeInverse == 2);
+            Assert.IsTrue(new ModInt(4, 5).MultiplicativeInverse == 4);
         }
     }
 }

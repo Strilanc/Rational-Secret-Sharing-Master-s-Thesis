@@ -4,18 +4,24 @@ using System.Linq;
 using System.Text;
 using System.Numerics;
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 /** Generates secure and verifiable random numbers on demand. */
-public interface IVerifiableRandomFunctionScheme<TPublicKey, TPrivateKey, TProof> {
+public interface IVerifiableRandomFunctionScheme<TPublicKey, TPrivateKey, TProof, TValue> {
     Tuple<TPublicKey, TPrivateKey> CreatePublicPrivateKeyPair(ISecureRandomNumberGenerator rng);
-    ProofValue<TProof> Generate(TPrivateKey key, BigInteger input, BigInteger range);
-    bool Verify(TPublicKey key, BigInteger input, BigInteger range, ProofValue<TProof> output);
+    ProofValue<TProof, TValue> Generate(TPrivateKey key, BigInteger input);
+    bool Verify(TPublicKey key, BigInteger input, ProofValue<TProof, TValue> output);
+    ProofValue<TProof, TValue> RandomMaliciousValue(ISecureRandomNumberGenerator rng);
 }
-public class ProofValue<TProof> {
+[DebuggerDisplay("{ToString()}")]
+public class ProofValue<TProof, TValue> {
     public readonly TProof Proof;
-    public readonly BigInteger Value;
-    public ProofValue(TProof proof, BigInteger value) {
+    public readonly TValue Value;
+    public ProofValue(TProof proof, TValue value) {
         this.Proof = proof;
         this.Value = value;
+    }
+    public override string ToString() {
+        return "Value=" + Value + ", Proof=" + Proof;
     }
 }

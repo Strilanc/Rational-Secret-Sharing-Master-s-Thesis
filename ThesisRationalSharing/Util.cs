@@ -20,6 +20,21 @@ public static class Util {
         }
     }
     [Pure]
+    public static T MinBy<T, C>(this IEnumerable<T> values, Func<T, C> proj) where C : IComparable<C> {
+        var f = values.First();
+        foreach (var e in values.Skip(1))
+            if (proj(e).CompareTo(proj(f)) < 0) f = e;
+        return f;
+    }
+    [Pure]
+    public static IEnumerable<BigInteger> PartialSums(this IEnumerable<BigInteger> values) {
+        var t = BigInteger.Zero;
+        foreach (var v in values) {
+            t += v;
+            yield return t;
+        }
+    }
+    [Pure]
     public static bool IsLikelyPrime(this BigInteger n, ISecureRandomNumberGenerator rng) {
         //Special cases
         if (n <= 1) return false;
@@ -124,27 +139,38 @@ public static class Util {
             result += 1;
         return result;
     }
-    public static ModIntPolynomial GenerateNextModIntPolynomial(this ISecureRandomNumberGenerator rng, BigInteger modulus, int degree, BigInteger? specifiedZero = null) {
+    public static Polynomial<T> GenerateNextPolynomialWithSpecifiedZero<T>(this ISecureRandomNumberGenerator rng, int degree, T valueAtZero) where T : IFiniteField<T>, IEquatable<T> {
         Contract.Requires(rng != null);
-        Contract.Requires(modulus > 0);
         Contract.Requires(degree >= 0);
-        Contract.Requires(specifiedZero == null || specifiedZero.Value < modulus);
-        var coefficients = new BigInteger[degree + 1];
-        for (int i = 0; i < degree; i++) {
-            coefficients[i] = i == 0 && specifiedZero.HasValue ? specifiedZero.Value : rng.GenerateNextValueMod(modulus);
+        var coefficients = new T[degree + 1];
+        coefficients[0] = valueAtZero;
+        for (int i = 1; i <= degree; i++) {
+            coefficients[i] = valueAtZero.Random(rng);
         }
-        return ModIntPolynomial.From(coefficients, modulus);
+        return Polynomial<T>.FromCoefficients(coefficients);
+    }
+    public static Polynomial<T> GenerateNextPolynomial<T>(this ISecureRandomNumberGenerator rng, T field, int degree) where T : IFiniteField<T>, IEquatable<T> {
+        Contract.Requires(rng != null);
+        Contract.Requires(degree >= 0);
+        var coefficients = new T[degree + 1];
+        for (int i = 0; i <= degree; i++) {
+            coefficients[i] = field.Random(rng);
+        }
+        return Polynomial<T>.FromCoefficients(coefficients);
     }
     public static ModInt Sum(this IEnumerable<ModInt> sequence) {
         return sequence.Aggregate((a, e) => a + e);
     }
-    public static ModIntPolynomial Sum(this IEnumerable<ModIntPolynomial> sequence) {
+    public static Polynomial<T> Sum<T>(this IEnumerable<Polynomial<T>> sequence) where T : IField<T>, IEquatable<T> {
         return sequence.Aggregate((a, e) => a + e);
+    }
+    public static T Product<T>(this IEnumerable<T> sequence) where T : IField<T>, IEquatable<T> {
+        return sequence.Aggregate((a, e) => a.Times(e));
     }
     public static ModInt Product(this IEnumerable<ModInt> sequence) {
         return sequence.Aggregate((a, e) => a * e);
     }
-    public static ModIntPolynomial Product(this IEnumerable<ModIntPolynomial> sequence) {
+    public static Polynomial<T> Product<T>(this IEnumerable<Polynomial<T>> sequence) where T : IField<T>, IEquatable<T> {
         return sequence.Aggregate((a, e) => a * e);
     }
 }
