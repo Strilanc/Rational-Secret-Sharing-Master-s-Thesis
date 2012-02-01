@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 
-///<remarks>Example implementation only. Security vulnerabilities are present.</remarks>
+///<remarks>Example implementation only. Trivial security vulnerabilities are present.</remarks>
 [DebuggerDisplay("{ToString()}")]
 public class VRF_RSA : IVerifiableRandomFunctionScheme<VRF_RSA.Key, VRF_RSA.Key, BigInteger, ModInt> {
     public readonly BigInteger P;

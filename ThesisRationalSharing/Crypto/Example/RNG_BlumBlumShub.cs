@@ -5,13 +5,13 @@ using System.Text;
 using System.Numerics;
 using System.Diagnostics.Contracts;
 
-///<remarks>Example implementation only. Security vulnerabilities are present.</remarks>
-public class BlumBlumbShub : ISecureRandomNumberGenerator {
+///<remarks>Example implementation only.</remarks>
+public class RNG_BlumBlumbShub : ISecureRandomNumberGenerator {
     private ModInt _state;
 
     /// <param name="modulus">Should be the product of two large primes.</param>
     /// <param name="seed">Seed value in (1, modulus), sharing no common divisors with the modulus.</param>
-    public BlumBlumbShub(BigInteger modulus, BigInteger seed) {
+    public RNG_BlumBlumbShub(BigInteger modulus, BigInteger seed) {
         Contract.Requires(1 < seed);
         Contract.Requires(seed < modulus);
         if (BigInteger.GreatestCommonDivisor(modulus, seed) != 1) throw new ArgumentException("Common factor");

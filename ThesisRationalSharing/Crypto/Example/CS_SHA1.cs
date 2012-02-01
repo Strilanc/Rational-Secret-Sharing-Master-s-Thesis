@@ -6,19 +6,19 @@ using System.Numerics;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
-///<remarks>Example implementation only. Security vulnerabilities are present.</remarks>
+///<remarks>Example implementation only. Trivial security vulnerabilities are present.</remarks>
 [DebuggerDisplay("{ToString()}")]
-public class CommitSHA1 : ICommitment<ModInt>, ICommitment<BigInteger> {
+public class CS_SHA1 : ICommitment<ModInt>, ICommitment<BigInteger> {
     private readonly byte[] _hash;
 
-    public CommitSHA1(byte[] hash) {
+    public CS_SHA1(byte[] hash) {
         Contract.Requires(hash != null);
         this._hash = hash;
     }
 
-    public static CommitSHA1 FromValue(BigInteger value) {
-        Contract.Ensures(Contract.Result<CommitSHA1>() != null);
-        return new CommitSHA1(Hash(value));
+    public static CS_SHA1 FromValue(BigInteger value) {
+        Contract.Ensures(Contract.Result<CS_SHA1>() != null);
+        return new CS_SHA1(Hash(value));
     }
 
     private static byte[] Hash(BigInteger value) {
@@ -42,9 +42,9 @@ public class CommitSHA1 : ICommitment<ModInt>, ICommitment<BigInteger> {
 
 public class CommitSHA1Scheme : ICommitmentScheme<BigInteger>, ICommitmentScheme<ModInt> {
     public ICommitment<BigInteger> Create(BigInteger value, ISecureRandomNumberGenerator rng) {
-        return CommitSHA1.FromValue(value);
+        return CS_SHA1.FromValue(value);
     }
     public ICommitment<ModInt> Create(ModInt value, ISecureRandomNumberGenerator rng) {
-        return CommitSHA1.FromValue(value.Value);
+        return CS_SHA1.FromValue(value.Value);
     }
 }

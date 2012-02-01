@@ -5,7 +5,7 @@ using System.Text;
 using System.Numerics;
 using System.Diagnostics.Contracts;
 
-/** Generates computationally secure random numbers on demand. */
+///<summary>Generates computationally secure random numbers on demand.</summary>
 [ContractClass(typeof(ContractClassForISecureRandomNumberGenerator))]
 public interface ISecureRandomNumberGenerator {
     ///<summary>Generates a uniformly distributed value in the range [0, strictCeiling).</summary>

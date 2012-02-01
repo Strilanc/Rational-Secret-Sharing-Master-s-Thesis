@@ -62,7 +62,7 @@ namespace ThesisRationalSharing.Protocols {
 
             var S = indexes.Zip(ShamirSecretSharing<F>.CreateShares(secret, t, n, rng), (e, i) => Tuple.Create(e, i)).ToDictionary(ei => ei.Item1, ei => ei.Item2);
 
-            var Y = indexes.ToDictionary(i => i, i => S[i].Y.Plus(vrfs.Generate(G[i], r).Value.AdditiveInverse));
+            var Y = indexes.ToDictionary(i => i, i => S[i].Y.Minus(vrfs.Generate(G[i], r).Value));
 
             return indexes.Select(i => new Share(i, c, V, Y, G[i])).ToArray();
         }

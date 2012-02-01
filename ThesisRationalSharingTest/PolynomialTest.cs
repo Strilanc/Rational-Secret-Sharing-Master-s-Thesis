@@ -10,11 +10,6 @@ namespace ThesisRationalSharingTest {
         public void ModIntPolynomialConstructorTest() {
             var b = new ModInt(0, 7);
             var c = new ModInt(0, 5);
-            Assert.IsTrue(new Polynomial<ModInt>(new ModInt[] { }).ToString() == "0");
-            Assert.IsTrue(new Polynomial<ModInt>(new ModInt[] { b+1 }).ToString() == "1 (mod 7)");
-            Assert.IsTrue(new Polynomial<ModInt>(new ModInt[] { b + 2, b + 3 }).ToString() == "3x + 2 (mod 7)");
-            Assert.IsTrue(new Polynomial<ModInt>(new ModInt[] { b + 4, b + 5, b + 6 }).ToString() == "6x^2 + 5x + 4 (mod 7)");
-
             Assert.IsTrue(Polynomial<ModInt>.FromCoefficients(new ModInt[0]).ToString() == "0");
             Assert.IsTrue(Polynomial<ModInt>.FromCoefficients(new[] { b+1 }).ToString() == "1 (mod 7)");
             Assert.IsTrue(Polynomial<ModInt>.FromCoefficients(new[] { b + 2, b + 3 }).ToString() == "3x + 2 (mod 7)");

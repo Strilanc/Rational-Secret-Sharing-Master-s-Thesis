@@ -6,23 +6,49 @@ using System.Diagnostics.Contracts;
 using System.Numerics;
 using System.Diagnostics;
 
-///<summary>Polynomials over modular integers with associated arithmetic.</summary>
+///<summary>A polynomial over a field.</summary>
 [DebuggerDisplay("{ToString()}")]
 public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEquatable<T> {
     private readonly T[] _coefficients;
-
-    public IEnumerable<T> GetCoefficients() {
-        return _coefficients ?? new T[0];
-    }
-
-    /** Creates a modular integer from the given reduced value and modulus. */
-    public Polynomial(T[] coefficients) {
-        Contract.Requires(coefficients != null);
-        Contract.Requires(coefficients.None() || !coefficients.Last().Equals(coefficients.Last().Zero));
-        this._coefficients = coefficients.Length == 0 ? null : coefficients;
-    }
-
     public bool IsZero { get { return _coefficients == null; } }
+    /// <summary>The polynomial's degree. Defaults to 0 for the zero polynomial.</summary>
+    public int Degree { get { return IsZero ? 0 : _coefficients.Length - 1; } }
+    /// <summary>The polynomial's coefficients in little-endian order.</summary>
+    public IEnumerable<T> Coefficients { get { return _coefficients ?? new T[0]; } }
+
+    /// <summary>
+    /// Trivial constructor.
+    /// Coefficients must be non-empty and not end in trailing zeroes.
+    /// Use default value or constructor to get the zero polynomial.
+    /// </summary>
+    private Polynomial(T[] normalizedCoefficients) {
+        Contract.Requires(!normalizedCoefficients.Last().Equals(normalizedCoefficients.Last().Zero));
+        this._coefficients = normalizedCoefficients;
+    }
+
+    /// <summary>Creates a polynomial from the given sequence of coefficients in little-endian order.</summary>
+    [Pure]
+    public static Polynomial<T> FromCoefficients(IEnumerable<T> coefficients) {
+        if (coefficients == null) return default(Polynomial<T>);
+
+        // cut trailing zeroes
+        var coefs = coefficients.ToArray();
+        int n = coefs.Length;
+        if (n == 0) return default(Polynomial<T>);
+        var zero = coefficients.First().Zero;
+        while (n > 0 && coefs[n - 1].Equals(zero)) {
+            n -= 1;
+        }
+
+        // copy remaining coefficients
+        if (n == 0) return default(Polynomial<T>);
+        var r = new T[n];
+        for (int i = 0; i < n; i++)
+            r[i] = coefs[i];
+        return new Polynomial<T>(r);
+    }
+
+    /// <summary>Evaluates the polynomial's y coordinate at the given x coordinate.</summary>
     [Pure]
     public T EvaluateAt(T x) {
         if (IsZero) return x.Zero;
@@ -35,58 +61,35 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
         return total;
     }
 
-    /** Creates a modular polynomial from the given coefficients and modulus, reducing the coefficients if necessary. */
-    [Pure]
-    public static Polynomial<T> FromCoefficients(IEnumerable<T> coefficients) {
-        return new Polynomial<T>(coefficients.Reverse().SkipWhile(e => e.Equals(e.Zero)).Reverse().ToArray());
-    }
-
-    [Pure]
-    private static IEnumerable<TOut> ZipPad<T1, T2, TOut>(IEnumerable<T1> sequence1, IEnumerable<T2> sequence2, Func<T1, T2, TOut> projection, T1 def1 = default(T1), T2 def2 = default(T2)) {
-        using (var e1 = sequence1.GetEnumerator()) {
-            using (var e2 = sequence2.GetEnumerator()) {
-                while (true) {
-                    var b1 = e1.MoveNext();
-                    var b2 = e2.MoveNext();
-                    if (!b1 && !b2) break;
-                    T1 item1 = b1 ? e1.Current : def1;
-                    T2 item2 = b2 ? e2.Current : def2;
-                    yield return projection(item1, item2);
-                }
-            }
-        }
-    }
-
     public static Polynomial<T> operator -(Polynomial<T> value) {
         if (value.IsZero) return value;
-        return FromCoefficients(value._coefficients.Select(e => e.AdditiveInverse));
+        return new Polynomial<T>(value._coefficients.Select(e => e.AdditiveInverse).ToArray());
     }
     public static Polynomial<T> operator +(Polynomial<T> value1, Polynomial<T> value2) {
         if (value1.IsZero) return value2;
         if (value2.IsZero) return value1;
         var zero = value1._coefficients.First().Zero;
-        return FromCoefficients(ZipPad(value1._coefficients, value2._coefficients, (v1, v2) => v1.Plus(v2), zero, zero));
-    }
-    public static Polynomial<T> operator -(Polynomial<T> value1, Polynomial<T> value2) {
-        if (value1.IsZero) return -value2;
-        if (value2.IsZero) return value1;
-        var zero = value1._coefficients.First().Zero;
-        return FromCoefficients(ZipPad(value1._coefficients, value2._coefficients, (v1, v2) => v1.Plus(v2.AdditiveInverse), zero, zero));
+        return FromCoefficients(value1._coefficients.ZipPad(value2._coefficients, (v1, v2) => v1.Plus(v2), zero, zero));
     }
     public static Polynomial<T> operator *(Polynomial<T> value, T factor) {
         if (value.IsZero) return value;
         return FromCoefficients(value._coefficients.Select(e => e.Times(factor)));
     }
-    public static Polynomial<T> operator *(T factor, Polynomial<T> value) {
-        return value * factor;
-    }
+    /// <summary>Returns the result of multiplying the polynomial by X to the shift'th power.</summary>
     public static Polynomial<T> operator <<(Polynomial<T> value, int shift) {
         Contract.Requires(shift >= 0);
         if (value.IsZero) return value;
         var zero = value._coefficients.First().Zero;
         return FromCoefficients(Enumerable.Repeat(zero, shift).Concat(value._coefficients));
     }
-    public int Degree { get { return _coefficients.Length - 1; } }
+
+    public static Polynomial<T> operator -(Polynomial<T> value1, Polynomial<T> value2) {
+        return value1 + -value2;
+    }
+    public static Polynomial<T> operator *(T factor, Polynomial<T> value) {
+        return value * factor;
+    }
+
     public static Polynomial<T> operator *(Polynomial<T> value1, Polynomial<T> value2) {
         if (value1.IsZero) return value1;
         if (value2.IsZero) return value2;
@@ -140,6 +143,9 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
         if (!r.Item2.IsZero) throw new ArgumentException("Division had remainder");
         return r.Item1;
     }
+    public static Polynomial<T> operator %(Polynomial<T> numerator, Polynomial<T> denominator) {
+        return numerator.DivRem(denominator).Item2;
+    }
     public Tuple<Polynomial<T>, Polynomial<T>> DivRem(Polynomial<T> divisor) {
         Contract.Requires(!divisor.IsZero);
         Contract.Ensures(Contract.Result<Tuple<Polynomial<T>, Polynomial<T>>>().Item1 * divisor + Contract.Result<Tuple<Polynomial<T>, Polynomial<T>>>().Item2 == this);
@@ -158,27 +164,29 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
             quotientCoefs[i - divisor.Degree] = c.Times(divisorInverseFactor);
             //inlined: remainder -= c * normalizedDivisor << degreeDif
             for (int j = 0; j <= divisor.Degree; j++) {
-                remainderCoefs[i - j] = remainderCoefs[i - j].Plus(c.Times(normalizedDivisor._coefficients[normalizedDivisor._coefficients.Length - j - 1]).AdditiveInverse);
+                remainderCoefs[i - j] = remainderCoefs[i - j].Minus(c.Times(normalizedDivisor._coefficients[normalizedDivisor._coefficients.Length - j - 1]));
             }
         }
         return Tuple.Create(FromCoefficients(quotientCoefs), FromCoefficients(remainderCoefs));
     }
 
+    ///<summary>Returns the polynomial of minimum degree passing through all of the given coordinates.</summary>
     public static Polynomial<T> FromInterpolation(IEnumerable<Point<T>> coords) {
         Contract.Requires(coords != null);
         Contract.Requires(coords.Select(e => e.X).Duplicates().None());
         Contract.Ensures(coords.All(e => Contract.Result<Polynomial<T>>().EvaluateAt(e.X).Equals(e.Y)));
 
-        if (coords.Count() == 0) return default(Polynomial<T>);
-        if (coords.Count() == 1) return new Polynomial<T>(new T[] { coords.Single().Y });
+        var pts = coords.ToArray();
+        if (pts.Length == 0) return default(Polynomial<T>);
+        if (pts.Length == 1) return FromCoefficients(new T[] { coords.Single().Y });
 
-        var U = FromCoefficients(new[] {coords.First().X.One});
+        var U = FromCoefficients(new[] { pts.First().X.One });
         var X = U << 1;
 
-        var fullNumerator = coords.Select(e => X - U * e.X).Product();
-        return coords.Select(e => {
+        var fullNumerator = pts.Select(e => X - U * e.X).Product();
+        return pts.Select(e => {
             var numerator = fullNumerator / (X - U * e.X);
-            var denominator = coords.Except(new[] { e }).Select(f => e.X.Plus(f.X.AdditiveInverse)).Product();
+            var denominator = pts.Except(new[] { e }).Select(f => e.X.Minus(f.X)).Product();
             return e.Y * numerator * denominator.MultiplicativeInverse;
         }).Sum();
     }

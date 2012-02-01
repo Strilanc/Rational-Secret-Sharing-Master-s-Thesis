@@ -10,7 +10,7 @@ namespace ThesisRationalSharingTest {
         [TestMethod()]
         public void TestSUIP() {
             var field = new ModInt(0, 1009);
-            var rng = new BlumBlumbShub(modulus: 997 * 991, seed: 4);
+            var rng = new RNG_BlumBlumbShub(modulus: 997 * 991, seed: 4);
             var threshold = 6;
             var total = 10;
             var alpha = new Rational(1, 3);

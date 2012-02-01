@@ -173,4 +173,24 @@ public static class Util {
     public static Polynomial<T> Product<T>(this IEnumerable<Polynomial<T>> sequence) where T : IField<T>, IEquatable<T> {
         return sequence.Aggregate((a, e) => a * e);
     }
+
+    ///<summary>Zips two sequences, padding the shorter sequence with default items until it matches the length of the longer sequence.</summary>
+    [Pure]
+    public static IEnumerable<TOut> ZipPad<T1, T2, TOut>(this IEnumerable<T1> sequence1, IEnumerable<T2> sequence2, Func<T1, T2, TOut> projection, T1 def1 = default(T1), T2 def2 = default(T2)) {
+        Contract.Requires(sequence1 != null);
+        Contract.Requires(sequence2 != null);
+        Contract.Requires(projection != null);
+        using (var e1 = sequence1.GetEnumerator()) {
+            using (var e2 = sequence2.GetEnumerator()) {
+                while (true) {
+                    var b1 = e1.MoveNext();
+                    var b2 = e2.MoveNext();
+                    if (!b1 && !b2) break;
+                    T1 item1 = b1 ? e1.Current : def1;
+                    T2 item2 = b2 ? e2.Current : def2;
+                    yield return projection(item1, item2);
+                }
+            }
+        }
+    }
 }

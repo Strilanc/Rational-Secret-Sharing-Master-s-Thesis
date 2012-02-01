@@ -10,7 +10,7 @@ namespace ThesisRationalSharingTest {
         [TestMethod()]
         public void TestSBP() {
             var field = new ModInt(0, 1009);
-            var rng = new BlumBlumbShub(modulus: 997 * 991, seed: 4);
+            var rng = new RNG_BlumBlumbShub(modulus: 997 * 991, seed: 4);
             var cs = new CommitSHA1Scheme();
             var vrf = new VRF_RSA(997, 991, field);
             var threshold = 6;

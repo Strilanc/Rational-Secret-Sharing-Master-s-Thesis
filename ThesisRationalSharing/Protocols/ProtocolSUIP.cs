@@ -83,7 +83,7 @@ namespace ThesisRationalSharing.Protocols {
                     get {
                         var p = _state.First().Value;
                         var x = _state.First().Key;
-                        return p.EvaluateAt(x.One).Plus(p.EvaluateAt(x.Zero).AdditiveInverse);
+                        return p.EvaluateAt(x.One).Minus(p.EvaluateAt(x.Zero));
                     }
                 }
                 public Polynomial<F> GetMessageSignatureTo(F receiver) {
@@ -122,17 +122,14 @@ namespace ThesisRationalSharing.Protocols {
             }
             public F Value {
                 get {
-                    return Polynomial<F>.FromInterpolation(_state.Keys.Select(e => new Point<F>(e, GetValueFrom(e)))).EvaluateAt(_state.Keys.First().Zero);
+                    return Polynomial<F>.FromInterpolation(_state.Keys.Select(e => new Point<F>(e, ShareYFor(e)))).EvaluateAt(_state.Keys.First().Zero);
                 }
             }
             public Point<F> GetMessageVerifierFromTo(F sender, F receiver) {
                 return _state[sender][receiver].Item2;
             }
-            public F GetValueFrom(F sender) {
+            public F ShareYFor(F sender) {
                 return WithOnlySignaturesFor(sender).Share;
-                //var p = _state[sender].First().Value.Item1;
-                //var x = _state.First().Key;
-                //return p.EvaluateAt(x.One).Plus(p.EvaluateAt(x.Zero).AdditiveInverse);
             }
             public Polynomial<F> GetMessageSignatureFromTo(F sender, F receiver) {
                 return _state[sender][receiver].Item1;
@@ -170,9 +167,9 @@ namespace ThesisRationalSharing.Protocols {
                     ).ToArray();
 
             var X = Enumerable.Range(0, omega + 1).Select(j => {
-                var vn = SI[(int)r - 1][j].GetValueFrom(c);
-                var vp = SI[(int)r - 2][j].GetValueFrom(c);
-                return vn.Plus(vp.AdditiveInverse);
+                var vn = SI[(int)r - 1][j].ShareYFor(c);
+                var vp = SI[(int)r - 2][j].ShareYFor(c);
+                return vn.Minus(vp);
             }).ToArray();
 
             return indexes.Select(i => {

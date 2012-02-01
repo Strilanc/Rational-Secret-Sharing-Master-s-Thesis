@@ -20,8 +20,7 @@ public struct Rational : IEquatable<Rational>, IComparable<Rational>, IField<Rat
     /// <summary>Trivial constructor.</summary>
     public Rational(BigInteger numerator, BigInteger denominator) {
         Contract.Requires(denominator > 0);
-        //Contract.Requires(BigInteger.GreatestCommonDivisor(_numerator, _denominator) = 1) //GCD needs to be marked pure
-        if (BigInteger.GreatestCommonDivisor(numerator, denominator) != 1) throw new ArgumentException("GCD(numerator, denominator) != 1");
+        Contract.Requires(BigInteger.GreatestCommonDivisor(numerator, denominator) == 1); //GCD needs to be marked pure
         this._numerator = numerator;
         this._denominator = denominator;
     }

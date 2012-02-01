@@ -6,13 +6,14 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 
-/** Generates secure and verifiable random numbers on demand. */
+/// <summary>Generates secure and verifiable random numbers on demand.</summary>
 public interface IVerifiableRandomFunctionScheme<TPublicKey, TPrivateKey, TProof, TValue> {
     Tuple<TPublicKey, TPrivateKey> CreatePublicPrivateKeyPair(ISecureRandomNumberGenerator rng);
     ProofValue<TProof, TValue> Generate(TPrivateKey key, BigInteger input);
     bool Verify(TPublicKey key, BigInteger input, ProofValue<TProof, TValue> output);
     ProofValue<TProof, TValue> RandomMaliciousValue(ISecureRandomNumberGenerator rng);
 }
+
 [DebuggerDisplay("{ToString()}")]
 public class ProofValue<TProof, TValue> {
     public readonly TProof Proof;

@@ -67,25 +67,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Crypto\Concrete\CommitSaltedSHA1.cs" />
-    <Compile Include="Crypto\IField.cs" />
+    <Compile Include="Math\IField.cs" />
     <Compile Include="Crypto\IVerifiableRandomFunction.cs" />
     <Compile Include="Crypto\ICommitment.cs" />
     <Compile Include="Crypto\ISecureRandomNumberGenerator.cs" />
     <Compile Include="Math\Point.cs" />
     <Compile Include="Math\Polynomial.cs" />
-    <Compile Include="Math\ModPoint.cs" />
     <Compile Include="Math\Rational.cs" />
     <Compile Include="Protocols\ProtocolSUIP.cs" />
     <Compile Include="Protocols\ProtocolABIP.cs" />
-    <Compile Include="Crypto\Concrete\LinePointCommitment.cs" />
+    <Compile Include="Protocols\LinePointCommitment.cs" />
     <Compile Include="Protocols\ProtocolSBP.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="Crypto\Concrete\BlumBlumShub.cs" />
-    <Compile Include="Crypto\Concrete\VRF_RSA.cs" />
-    <Compile Include="Crypto\Concrete\CommitSHA1.cs" />
-    <Compile Include="Math\ModIntPolynomial.cs" />
-    <Compile Include="Crypto\Concrete\ShamirSecretSharing.cs" />
+    <Compile Include="Crypto\Example\RNG_BlumBlumShub.cs" />
+    <Compile Include="Crypto\Example\VRF_RSA.cs" />
+    <Compile Include="Crypto\Example\CS_SHA1.cs" />
+    <Compile Include="Protocols\ShamirSecretSharing.cs" />
     <Compile Include="Math\ModInt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
