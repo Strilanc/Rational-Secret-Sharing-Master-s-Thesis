@@ -153,7 +153,7 @@ namespace ThesisRationalSharing.Protocols {
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
             var indexes = ShareIndices(n, secret);
 
-            var L = indexes.Zip(indexes.Select(i => rng.GenerateNextValuePoisson(gamma) + 1).PartialSums().Select(i => i + beta).Shuffle(rng), (e1,e2) => Tuple.Create(e1, e2)).ToDictionary(e => e.Item1, e => e.Item2);
+            var L = indexes.Zip(indexes.Select(i => rng.GenerateNextValuePoisson(gamma) + 1).PartialSums().Select(i => i + beta + 1).Shuffle(rng), (e1,e2) => Tuple.Create(e1, e2)).ToDictionary(e => e.Item1, e => e.Item2);
             var Ln = L.Values.Max() + 1;
             var c = L.Keys.MinBy(i => L[i]);
             var Lc = L[c];
@@ -242,6 +242,7 @@ namespace ThesisRationalSharing.Protocols {
             public readonly int t;
             public readonly int omega;
             private Tuple<F> secret = null;
+            private Dictionary<F, List<Point<F>>> lastMessages = null;
             public F Index { get { return share.i; } }
             public Tuple<F> RecoveredSecretValue { get { return secret; } }
 
@@ -270,21 +271,42 @@ namespace ThesisRationalSharing.Protocols {
             }
             public void UseRoundMessages(int round, Dictionary<F, SplitSignedValue.ForSender[]> messages) {
                 if (secret != null) return;
+                if (cooperatorIndexes.Count < t) return;
 
-                var S = new List<List<Point<F>>>();
+                var lastCoops = new HashSet<F>(cooperatorIndexes);
+                var receivedMessages = new Dictionary<F, List<Point<F>>>();
                 foreach (var m in messages) {
                     if (!cooperatorIndexes.Contains(m.Key)) continue;
                     if (!Enumerable.Range(0, omega + 1).All(oi => SplitSignedValue.Verify(m.Key, share.i, m.Value[oi], share.MessageVerifiers[round - 1][oi]))) {
                         cooperatorIndexes.Remove(m.Key);
                         continue;
                     }
-                    S.Add(Enumerable.Range(0, omega + 1).Select(oi => new Point<F>(m.Key, m.Value[oi].Share)).ToList());
+                    receivedMessages.Add(m.Key, Enumerable.Range(0, omega + 1).Select(oi => new Point<F>(m.Key, m.Value[oi].Share)).ToList());
                 }
                 cooperatorIndexes.IntersectWith(messages.Keys);
-                if (cooperatorIndexes.Count < t) return;
 
-                var s = Enumerable.Range(0, S.First().Count).Select(i => ShamirSecretSharing<F>.CombineShares(t, S.Select(e => e[i]).ToArray())).ToArray();
-                if (s.Skip(1).All(e => e.Equals(e.Zero))) secret = Tuple.Create(s.First());
+                lastCoops.ExceptWith(cooperatorIndexes);
+                var extraShares = new List<Dictionary<F, List<Point<F>>>>();
+                if (round > 1 && cooperatorIndexes.Count == t - 1) {
+                    foreach (var c in lastCoops) {
+                        extraShares.Add(new Dictionary<F, List<Point<F>>> {
+                            {c, lastMessages[c].Zip(share.ShortMessage, (p, n) => new Point<F>(c, p.Y.Plus(n))).ToList()}
+                        });
+                    }
+                } else if (cooperatorIndexes.Count >= t) {
+                    extraShares.Add(new Dictionary<F, List<Point<F>>>());
+                }
+                lastMessages = receivedMessages;
+
+                if (cooperatorIndexes.Count < t - 1) return;
+                foreach (var ex in extraShares) {
+                    var c = receivedMessages.Concat(ex).ToArray();
+                    var s = Enumerable.Range(0, c.First().Value.Count()).Select(i => ShamirSecretSharing<F>.CombineShares(t, c.Select(e => e.Value[i]).ToArray())).ToArray();
+                    if (s.Skip(1).All(e => e.Equals(e.Zero))) {
+                        secret = Tuple.Create(s.First());
+                        return;
+                    }
+                }
             }
             public override string ToString() { return "SUIP Rational Player " + share.i; }
         }
