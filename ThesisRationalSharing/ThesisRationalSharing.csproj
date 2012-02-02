@@ -74,6 +74,7 @@
     <Compile Include="Math\Point.cs" />
     <Compile Include="Math\Polynomial.cs" />
     <Compile Include="Math\Rational.cs" />
+    <Compile Include="Protocols\ProtocolABCP.cs" />
     <Compile Include="Protocols\ProtocolSUIP.cs" />
     <Compile Include="Protocols\ProtocolABIP.cs" />
     <Compile Include="Protocols\LinePointCommitment.cs" />

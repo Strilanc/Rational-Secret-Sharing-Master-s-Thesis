@@ -51,6 +51,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ProtocolPABPCTest.cs" />
     <Compile Include="ProtocolSUIPTest.cs" />
     <Compile Include="ProtocolABIPTest.cs" />
     <Compile Include="ProtocolSBPTest.cs" />
