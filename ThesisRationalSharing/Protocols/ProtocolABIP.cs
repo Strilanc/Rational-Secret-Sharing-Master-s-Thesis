@@ -38,7 +38,7 @@ namespace ThesisRationalSharing.Protocols {
             this.alpha = alpha;
         }
 
-        private F[] ShareIndices() {
+        private F[] ShareIndexes() {
             var r = new F[n];
             r[0] = field.One;
             for (int i = 1; i < n; i++)
@@ -46,17 +46,17 @@ namespace ThesisRationalSharing.Protocols {
             return r;
         }
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
-            var indexes = ShareIndices();
+            var indexes = ShareIndexes();
 
-            var r = rng.GenerateNextValuePoisson(chanceContinue: 1 - alpha) + 1;
+            var r = rng.GenerateNextValueGeometric(chanceStop: alpha, min: 1);
 
-            var vg = indexes.ToDictionary(i => i, i => vrfs.CreatePublicPrivateKeyPair(rng));
-            var V = indexes.ToDictionary(i => i, i => vg[i].Item1);
-            var G = indexes.ToDictionary(i => i, i => vg[i].Item2);
-            
-            var S = indexes.Zip(ShamirSecretSharing<F>.CreateShares(secret, t - 1, n, rng), (e, i) => Tuple.Create(e, i)).ToDictionary(ei => ei.Item1, ei => ei.Item2);
+            var vg = indexes.MapTo(i => vrfs.CreatePublicPrivateKeyPair(rng));
+            var V = indexes.MapTo(i => vg[i].Item1);
+            var G = indexes.MapTo(i => vg[i].Item2);
 
-            var Y = indexes.ToDictionary(i => i, i => S[i].Y.Minus(vrfs.Generate(G[i], r).Value));
+            var S = ShamirSecretSharing<F>.CreateShares(secret, t - 1, n, rng).KeyBy(e => e.X);
+
+            var Y = indexes.MapTo(i => S[i].Y.Minus(vrfs.Generate(G[i], r).Value));
 
             return indexes.Select(i => new Share(i, V, Y, G[i])).ToArray();
         }
@@ -132,7 +132,7 @@ namespace ThesisRationalSharing.Protocols {
                 this.share = share;
                 this.scheme = scheme;
                 this.coalitionShares = coalitionShares;
-                foreach (var fi in scheme.ShareIndices())
+                foreach (var fi in scheme.ShareIndexes())
                     cooperatorIndexes.Add(fi);
             }
 
@@ -180,7 +180,7 @@ namespace ThesisRationalSharing.Protocols {
             public readonly IEnumerable<F> playerIndexes;
             public MaliciousPlayer(Share share, ABIP<F, TVRFPub, TVRFPriv, TVRFProof> scheme, ISecureRandomNumberGenerator randomMessageGenerator) { 
                 this.share = share; 
-                this.playerIndexes = scheme.ShareIndices();
+                this.playerIndexes = scheme.ShareIndexes();
                 this.randomMessageGenerator = randomMessageGenerator;
                 this.scheme = scheme;
             }

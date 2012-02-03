@@ -13,6 +13,14 @@ public static class Util {
             if (h.Add(projection(item))) 
                 yield return item;
     }
+    [Pure]
+    public static Dictionary<K, V> MapTo<K, V>(this IEnumerable<K> keys, Func<K, V> projection) {
+        return keys.ToDictionary(k => k, projection);
+    }
+    [Pure]
+    public static Dictionary<K, V> KeyBy<K, V>(this IEnumerable<V> values, Func<V, K> projection) {
+        return values.ToDictionary(projection, v => v);
+    }
     public static BigInteger GenerateNextValuePrimeBelow(this ISecureRandomNumberGenerator rng, BigInteger ceiling) {
         while (true) {
             var p = rng.GenerateNextValueMod(ceiling);
@@ -132,10 +140,10 @@ public static class Util {
         if (probability == 0) return false;
         return rng.GenerateNextValueMod(probability.Denominator) <= rng.GenerateNextValueMod(probability.Numerator);
     }
-    public static BigInteger GenerateNextValuePoisson(this ISecureRandomNumberGenerator rng, Rational chanceContinue) {
+    public static BigInteger GenerateNextValueGeometric(this ISecureRandomNumberGenerator rng, Rational chanceStop, BigInteger min = default(BigInteger)) {
         Contract.Requires(rng != null);
-        BigInteger result = 0;
-        while (rng.GenerateNextChance(chanceContinue))
+        var result = min;
+        while (!rng.GenerateNextChance(chanceStop))
             result += 1;
         return result;
     }

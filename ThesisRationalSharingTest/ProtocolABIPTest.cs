@@ -53,8 +53,8 @@ namespace ThesisRationalSharingTest {
             };
             for (var secret = field; secret.Value < 25; secret += 1) {
                 var threshold = 6;
-                var total = 10;
-                var alpha = new Rational(1, 3);
+                var total = 9;
+                var alpha = new Rational(1, 4);
                 var numColluders = (int)rng.GenerateNextValueMod(threshold);
                 var numMalicious = (int)rng.GenerateNextValueMod(total - numColluders);
                 f(secret, threshold, total, numColluders, numMalicious, alpha);

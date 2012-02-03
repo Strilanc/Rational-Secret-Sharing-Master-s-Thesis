@@ -56,16 +56,16 @@ namespace ThesisRationalSharing.Protocols {
             var indexes = ShareIndices();
             var c = cs.Create(secret, rng);
 
-            var b = rng.GenerateNextValueMod(n) + rng.GenerateNextValuePoisson(chanceContinue: 1 - alpha) + 1;
-            var r = indexes.ToDictionary(i => i, i => b + ((i.ToInt() - b + t + delta + 1).ProperMod(n)));
+            var b = rng.GenerateNextValueMod(n) + rng.GenerateNextValueGeometric(chanceStop: alpha, min: 1);
+            var r = indexes.MapTo(i => b + ((i.ToInt() - b + t + delta + 1).ProperMod(n)));
 
-            var vg = indexes.ToDictionary(i => i, i => vrfs.CreatePublicPrivateKeyPair(rng));
-            var V = indexes.ToDictionary(i => i, i => vg[i].Item1);
-            var G = indexes.ToDictionary(i => i, i => vg[i].Item2);
-            
-            var S = indexes.ToDictionary(x => x, x => indexes.Zip(ShamirSecretSharing<F>.CreateShares(secret, t - 1, n, rng), (e, i) => Tuple.Create(e, i)).ToDictionary(ei => ei.Item1, ei => ei.Item2));
+            var vg = indexes.MapTo(i => vrfs.CreatePublicPrivateKeyPair(rng));
+            var V = indexes.MapTo(i => vg[i].Item1);
+            var G = indexes.MapTo(i => vg[i].Item2);
 
-            var Y = indexes.ToDictionary(i => i, i => indexes.ToDictionary(j => j, j => S[i][j].Y.Minus(vrfs.Generate(G[j], r[i] + (j.ToInt() - r[i]).ProperMod(n)).Value)));
+            var S = indexes.MapTo(i => ShamirSecretSharing<F>.CreateShares(secret, t, n, rng).KeyBy(e => e.X));
+
+            var Y = indexes.MapTo(i => indexes.ToDictionary(j => j, j => S[i][j].Y.Minus(vrfs.Generate(G[j], r[i] + (j.ToInt() - r[i]).ProperMod(n)).Value)));
 
             return indexes.Select(i => new Share(i, c, V, Y[i], G[i])).ToArray();
         }

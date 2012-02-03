@@ -154,7 +154,7 @@ namespace ThesisRationalSharing.Protocols {
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
             var indexes = ShareIndices();
 
-            var L = indexes.Zip(indexes.Select(i => rng.GenerateNextValuePoisson(gamma) + 1).PartialSums().Select(i => i + beta + 1).Shuffle(rng), (e1,e2) => Tuple.Create(e1, e2)).ToDictionary(e => e.Item1, e => e.Item2);
+            var L = indexes.Zip(indexes.Select(i => rng.GenerateNextValueGeometric(chanceStop: gamma, min: 1)).PartialSums().Select(i => i + beta + 1).Shuffle(rng), (e1,e2) => Tuple.Create(e1, e2)).ToDictionary(e => e.Item1, e => e.Item2);
             var Ln = L.Values.Max() + 1;
             var c = L.Keys.MinBy(i => L[i]);
             var Lc = L[c];
