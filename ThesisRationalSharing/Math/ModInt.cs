@@ -114,7 +114,7 @@ public struct ModInt : IEquatable<ModInt>, IFiniteField<ModInt> {
     }
 
     public ModInt Zero { get { return new ModInt(0, this.Modulus); } }
-    public ModInt One { get { return new ModInt(1, this.Modulus); } }
+    public ModInt One { get { return new ModInt(1 % this.Modulus, this.Modulus); } }
 
     public ModInt Plus(ModInt other) {
         return this + other;
@@ -126,11 +126,11 @@ public struct ModInt : IEquatable<ModInt>, IFiniteField<ModInt> {
 
     public ModInt AdditiveInverse { get { return -this; } }
 
-    public string SequenceRepresentationItem {
+    public string ListItemToString {
         get { return this.Value.ToString(); }
     }
 
-    public string SequenceRepresentationSuffix {
+    public string ListToStringSuffix {
         get { return " (mod " + this.Modulus.ToString() + ")"; }
     }
 
@@ -150,5 +150,19 @@ public struct ModInt : IEquatable<ModInt>, IFiniteField<ModInt> {
 
     public ModInt FromInt(BigInteger i) {
         return Zero + i;
+    }
+
+
+    public bool IsZero {
+        get { return this.Value == 0; }
+    }
+
+    public bool IsOne {
+        get { return this.Value == 1 || this.Modulus == 1; }
+    }
+
+
+    public ModInt PlusOne() {
+        return this + 1;
     }
 }

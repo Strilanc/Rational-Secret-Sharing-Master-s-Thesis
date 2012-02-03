@@ -12,12 +12,17 @@ public interface IField<T> where T : IField<T>, IEquatable<T> {
     T Times(T other);
     T AdditiveInverse { get; }
     T MultiplicativeInverse { get; }
-    String SequenceRepresentationItem { get; }
+    String ListItemToString { get; }
+    bool IsZero { get; }
+    bool IsOne { get; }
+    T PlusOne();
 
     //"static"
+    /// <summary>The additive identity of the field.</summary>
     T Zero { get; }
+    /// <summary>The multiplicative identity of the field.</summary>
     T One { get; }
-    String SequenceRepresentationSuffix { get; }
+    String ListToStringSuffix { get; }
 }
 ///<summary>A member of a mathematical finite field, with access to some ideally-would-be-static methods.</summary>
 public interface IFiniteField<T> : IField<T> where T : IField<T>, IEquatable<T> {

@@ -45,15 +45,15 @@ namespace ThesisRationalSharing.Protocols {
             this.cs = cs;
         }
 
-        private static F[] ShareIndices(int n, F f) {
-            var r = new F[n];
-            r[0] = f.One;
+        private F[] ShareIndices() {
+            var r = new F[this.n];
+            r[0] = field.One;
             for (int i = 1; i < n; i++)
-                r[i] = r[i - 1].Plus(f.One);
+                r[i] = r[i - 1].PlusOne();
             return r;
         }
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
-            var indexes = ShareIndices(n, secret);
+            var indexes = ShareIndices();
             var c = cs.Create(secret, rng);
 
             var b = rng.GenerateNextValueMod(n) + rng.GenerateNextValuePoisson(chanceContinue: 1 - alpha) + 1;
@@ -76,7 +76,6 @@ namespace ThesisRationalSharing.Protocols {
         public F CoalitionCombine(Share[] availableShares) {
             if (availableShares.Length < t) throw new ArgumentException("Not enough shares");
             var r = 1;
-            var zero = availableShares.First().Y.First().Value.Zero;
             var cx = availableShares.First();
             var Q = new Queue<Point<F>>();
             while (true) {
@@ -95,13 +94,13 @@ namespace ThesisRationalSharing.Protocols {
             }
         }
 
-        public IPlayer MakeCooperateUntilLearnPlayer(Share share) { return new RationalPlayer(share, new Share[0], n, t, vrfs, new Tuple<F>[1]); }
+        public IPlayer MakeCooperateUntilLearnPlayer(Share share) { return new RationalPlayer(share, new Share[0], this, new Tuple<F>[1]); }
         public IPlayer[] MakeCooperateUntilLearnCoalition(Share[] shares) {
             var x = new Tuple<F>[1];
-            return shares.Select(s => new RationalPlayer(s, shares, n, t, vrfs, x)).ToArray();
+            return shares.Select(s => new RationalPlayer(s, shares, this, x)).ToArray();
         }
-        public IPlayer MakeSendRandomMessagesPlayer(Share share, ISecureRandomNumberGenerator rng) { return new MaliciousPlayer(share, n, vrfs, rng); }
-        public IPlayer MakeSendNoMessagePlayer(Share share) { return new MaliciousPlayer(share, n, vrfs, null); }
+        public IPlayer MakeSendRandomMessagesPlayer(Share share, ISecureRandomNumberGenerator rng) { return new MaliciousPlayer(share, this, rng); }
+        public IPlayer MakeSendNoMessagePlayer(Share share) { return new MaliciousPlayer(share, this, null); }
 
         public void RunProtocol(IEnumerable<IPlayer> players) {
             var r = 1;
@@ -129,70 +128,66 @@ namespace ThesisRationalSharing.Protocols {
             public readonly Share share;
             public readonly Share[] coalitionShares;
             public readonly HashSet<F> cooperatorIndexes = new HashSet<F>();
-            public readonly IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs;
-            public readonly int n;
-            public readonly int t;
-            private Tuple<F>[] secret;
+            public readonly ABCP<F, TVRFPub, TVRFPriv, TVRFProof> scheme;
+            private Tuple<F>[] coalitionSecretPointer;
             public F Index { get { return share.i; } }
             public Tuple<F> RecoveredSecretValue {
                 get {
-                    return secret[0];
+                    return coalitionSecretPointer[0];
                 } 
             }
             private readonly Queue<Point<F>> receivedShares = new Queue<Point<F>>();
 
-            public RationalPlayer(Share share, Share[] coalitionShares, int n, int t, IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs, Tuple<F>[] secret) {
-                Contract.Requires(secret.Length == 1);
+            public RationalPlayer(Share share, Share[] coalitionShares, ABCP<F, TVRFPub, TVRFPriv, TVRFProof> scheme, Tuple<F>[] coalitionSharedSecretPointer) {
+                Contract.Requires(coalitionSharedSecretPointer.Length == 1);
                 this.share = share;
-                this.n = n;
-                this.t = t;
-                this.vrfs = vrfs;
+                this.scheme = scheme;
                 this.coalitionShares = coalitionShares;
-                this.secret = secret;
-                foreach (var fi in ShareIndices(n, share.i))
+                this.coalitionSecretPointer = coalitionSharedSecretPointer;
+                foreach (var fi in scheme.ShareIndices())
                     cooperatorIndexes.Add(fi);
             }
 
             public string DoneReason() {
-                if (secret[0] != null) return "Have secret";
-                if (cooperatorIndexes.Count < t) return "Not enough cooperators";
+                if (coalitionSecretPointer[0] != null) return "Have secret";
+                if (cooperatorIndexes.Count < scheme.t) return "Not enough cooperators";
                 return null;
             }
             public ProofValue<TVRFProof, F> GetRoundMessage(int round) {
-                if (secret[0] != null) return null;
-                if (cooperatorIndexes.Count < t) return null;
-                return vrfs.Generate(share.G, round);
+                if (coalitionSecretPointer[0] != null) return null;
+                if (cooperatorIndexes.Count < scheme.t) return null;
+                return scheme.vrfs.Generate(share.G, round);
             }
             public IEnumerable<F> GetMessageReceivers() {
                 return cooperatorIndexes;
             }
             public void UseRoundMessage(int round, F senderId, ProofValue<TVRFProof, F> message) {
                 if (message == null) cooperatorIndexes.Remove(senderId);
-                if (secret[0] != null) return;
+                if (coalitionSecretPointer[0] != null) return;
                 if (!cooperatorIndexes.Contains(senderId)) return;
-                if (!vrfs.Verify(share.V[senderId], round, message)) {
+                if (!scheme.vrfs.Verify(share.V[senderId], round, message)) {
                     cooperatorIndexes.Remove(senderId);
                     return;
                 }
-                if (cooperatorIndexes.Count < t) return;
+                if (cooperatorIndexes.Count < scheme.t) return;
                 receivedShares.Enqueue(new Point<F>(senderId, message.Value.Plus(share.Y[senderId])));
                 if (coalitionShares != null) SimulateCoalition(round);
-                if (receivedShares.Count > t) receivedShares.Dequeue();                
-                var s = Polynomial<F>.FromInterpolation(receivedShares).EvaluateAt(share.i.Zero);
-                if (share.c.Matches(s)) secret[0] = Tuple.Create(s);
+                if (receivedShares.Count > scheme.t) receivedShares.Dequeue();                
+                var s = Polynomial<F>.FromInterpolation(receivedShares).EvaluateAt(scheme.field);
+                if (share.c.Matches(s)) coalitionSecretPointer[0] = Tuple.Create(s);
             }
             private void SimulateCoalition(int curRound) {
                 var q = new Queue<Point<F>>(receivedShares);
-                for (int r = 1; r < n; r++) {
+                for (int r = 1; r < scheme.n; r++) {
                     var simRound = curRound + r;
-                    if (q.Count > 0 && q.First().X.ToInt().ProperMod(n) == simRound.ProperMod(n))
+                    if (q.Count > 0 && q.First().X.ToInt().ProperMod(scheme.n) == simRound.ProperMod(scheme.n))
                         q.Dequeue();
-                    var shr = coalitionShares.SingleOrDefault(e => e.i.ToInt().ProperMod(n) == simRound.ProperMod(n));
+                    var shr = coalitionShares.SingleOrDefault(e => e.i.ToInt().ProperMod(scheme.n) == simRound.ProperMod(scheme.n));
                     if (shr == null) continue;
-                    q.Enqueue(new Point<F>(shr.i, vrfs.Generate(shr.G, simRound).Value.Plus(share.Y[shr.i])));
-                    if (q.Count > t) receivedShares.Dequeue();
-                    var s = Polynomial<F>.FromInterpolation(q).EvaluateAt(share.i.Zero);
-                    if (share.c.Matches(s)) secret[0] = Tuple.Create(s);
+                    q.Enqueue(new Point<F>(shr.i, scheme.vrfs.Generate(shr.G, simRound).Value.Plus(share.Y[shr.i])));
+                    if (q.Count > scheme.t) receivedShares.Dequeue();
+                    var s = Polynomial<F>.FromInterpolation(q).EvaluateAt(scheme.field.Zero);
+                    if (share.c.Matches(s)) coalitionSecretPointer[0] = Tuple.Create(s);
                 }
             }
             public override string ToString() { return "ABCP Rational Player " + share.i; }
@@ -200,14 +195,14 @@ namespace ThesisRationalSharing.Protocols {
         [DebuggerDisplay("{ToString()}")]
         public class MaliciousPlayer : IPlayer {
             public readonly Share share;
-            public readonly IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs;
+            public readonly ABCP<F, TVRFPub, TVRFPriv, TVRFProof> scheme;
             public readonly ISecureRandomNumberGenerator randomMessageGenerator;
             public readonly IEnumerable<F> playerIndexes;
-            public MaliciousPlayer(Share share, int n, IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs, ISecureRandomNumberGenerator randomMessageGenerator) { 
+            public MaliciousPlayer(Share share, ABCP<F, TVRFPub, TVRFPriv, TVRFProof> scheme, ISecureRandomNumberGenerator randomMessageGenerator) { 
                 this.share = share; 
-                this.playerIndexes = ShareIndices(n, share.i);
+                this.playerIndexes = scheme.ShareIndices();
                 this.randomMessageGenerator = randomMessageGenerator;
-                this.vrfs = vrfs;
+                this.scheme = scheme;
             }
             public F Index { get { return share.i; } }
             public F GetRoundExpectedSender(int round) {
@@ -217,7 +212,7 @@ namespace ThesisRationalSharing.Protocols {
             public Tuple<F> RecoveredSecretValue { get { return null; } }
             public string DoneReason() { return "Malicious"; }
             public ProofValue<TVRFProof, F> GetRoundMessage(int round) { 
-                return randomMessageGenerator == null ? null : vrfs.RandomMaliciousValue(randomMessageGenerator); 
+                return randomMessageGenerator == null ? null : scheme.vrfs.RandomMaliciousValue(randomMessageGenerator); 
             }
             public override string ToString() { return "ABCP Malicious Player " + share.i; }
             public void UseRoundMessage(int round, F senderId, ProofValue<TVRFProof, F> message) {

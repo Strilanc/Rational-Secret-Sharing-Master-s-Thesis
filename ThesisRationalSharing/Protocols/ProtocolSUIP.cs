@@ -43,11 +43,11 @@ namespace ThesisRationalSharing.Protocols {
             this.beta = beta;
         }
 
-        private static F[] ShareIndices(int n, F f) {
+        private F[] ShareIndices() {
             var r = new F[n];
-            r[0] = f.One;
+            r[0] = field.One;
             for (int i = 1; i < n; i++)
-                r[i] = r[i - 1].Plus(f.One);
+                r[i] = r[i - 1].PlusOne();
             return r;
         }
         private BigInteger ChooseDefinitiveRound(ISecureRandomNumberGenerator rng, BigInteger Lc) {
@@ -74,6 +74,7 @@ namespace ThesisRationalSharing.Protocols {
                 private ForSender(Dictionary<F, Polynomial<F>> _state) {
                     this._state = _state;
                 }
+                private F Field { get { return _state.Keys.First().Zero; } }
                 
                 public static ForSender From(F sender, SplitSignedValue source) {
                     return new ForSender(source._state[sender].ToDictionary(f => f.Key, f => f.Value.Item1));
@@ -82,8 +83,7 @@ namespace ThesisRationalSharing.Protocols {
                 public F Share {
                     get {
                         var p = _state.First().Value;
-                        var x = _state.First().Key;
-                        return p.EvaluateAt(x.One).Minus(p.EvaluateAt(x.Zero));
+                        return p.EvaluateAt(Field.One).Minus(p.EvaluateAt(Field.Zero));
                     }
                 }
                 public Polynomial<F> GetMessageSignatureTo(F receiver) {
@@ -111,6 +111,7 @@ namespace ThesisRationalSharing.Protocols {
             }
 
             private readonly Dictionary<F, Dictionary<F, Tuple<Polynomial<F>, Point<F>>>> _state;
+            private F Field { get { return _state.Keys.First().Zero; } } 
             private SplitSignedValue(Dictionary<F, Dictionary<F, Tuple<Polynomial<F>, Point<F>>>> _state) {
                 this._state = _state;
             }
@@ -122,7 +123,7 @@ namespace ThesisRationalSharing.Protocols {
             }
             public F Value {
                 get {
-                    return Polynomial<F>.FromInterpolation(_state.Keys.Select(e => new Point<F>(e, ShareYFor(e)))).EvaluateAt(_state.Keys.First().Zero);
+                    return Polynomial<F>.FromInterpolation(_state.Keys.Select(e => new Point<F>(e, ShareYFor(e)))).EvaluateAt(Field.Zero);
                 }
             }
             public Point<F> GetMessageVerifierFromTo(F sender, F receiver) {
@@ -151,7 +152,7 @@ namespace ThesisRationalSharing.Protocols {
         }
 
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
-            var indexes = ShareIndices(n, secret);
+            var indexes = ShareIndices();
 
             var L = indexes.Zip(indexes.Select(i => rng.GenerateNextValuePoisson(gamma) + 1).PartialSums().Select(i => i + beta + 1).Shuffle(rng), (e1,e2) => Tuple.Create(e1, e2)).ToDictionary(e => e.Item1, e => e.Item2);
             var Ln = L.Values.Max() + 1;
@@ -161,7 +162,7 @@ namespace ThesisRationalSharing.Protocols {
 
             var SI = Enumerable.Range(1, (int)Ln + 1).Select(i =>
                         Enumerable.Range(0, omega + 1).Select(j => {
-                            var m = i == r ? (j == 0 ? secret : secret.Zero) : secret.Random(rng);
+                            var m = i == r ? (j == 0 ? secret : field.Zero) : field.Random(rng);
                             return SplitSignedValue.FromValue(m, t, n, indexes, rng);
                         }).ToArray()
                     ).ToArray();
@@ -196,14 +197,14 @@ namespace ThesisRationalSharing.Protocols {
                                         y = e.SignedMessages[r - 1][oi].Share;
                                     return new Point<F>(e.i, y);
                                 }).ToArray())).ToArray();
-                if (M.Skip(1).All(e => e.Equals(e.Zero))) return M.First();
+                if (M.Skip(1).All(e => e.IsZero)) return M.First();
             }
             throw new Exception();
         }
 
-        public IPlayer MakeCooperateUntilLearnPlayer(Share share) { return new RationalPlayer(share, n, t, omega); }
-        public IPlayer MakeSendRandomMessagesPlayer(Share share, ISecureRandomNumberGenerator rng) { return new MaliciousPlayer(share, n, t, rng, omega); }
-        public IPlayer MakeSendNoMessagePlayer(Share share) { return new MaliciousPlayer(share, n, t, null, omega); }
+        public IPlayer MakeCooperateUntilLearnPlayer(Share share) { return new RationalPlayer(share, this); }
+        public IPlayer MakeSendRandomMessagesPlayer(Share share, ISecureRandomNumberGenerator rng) { return new MaliciousPlayer(share, this, rng); }
+        public IPlayer MakeSendNoMessagePlayer(Share share) { return new MaliciousPlayer(share, this, null); }
 
         public void RunProtocol(IEnumerable<IPlayer> players) {
             var r = 1;
@@ -238,31 +239,27 @@ namespace ThesisRationalSharing.Protocols {
         public class RationalPlayer : IPlayer {
             public readonly Share share;
             public readonly HashSet<F> cooperatorIndexes = new HashSet<F>();
-            public readonly int n;
-            public readonly int t;
-            public readonly int omega;
+            public readonly SUIP<F> scheme;
             private Tuple<F> secret = null;
             private Dictionary<F, List<Point<F>>> lastMessages = null;
             public F Index { get { return share.i; } }
             public Tuple<F> RecoveredSecretValue { get { return secret; } }
 
-            public RationalPlayer(Share share, int n, int t, int omega) {
+            public RationalPlayer(Share share, SUIP<F> scheme) {
                 this.share = share;
-                this.n = n;
-                this.t = t;
-                this.omega = omega;
-                foreach (var fi in ShareIndices(n, share.i))
+                this.scheme = scheme;
+                foreach (var fi in scheme.ShareIndices())
                     cooperatorIndexes.Add(fi);
             }
 
             public string DoneReason() {
                 if (secret != null) return "Have secret";
-                if (cooperatorIndexes.Count < t) return "Not enough cooperators";
+                if (cooperatorIndexes.Count < scheme.t) return "Not enough cooperators";
                 return null;
             }
             public SplitSignedValue.ForSender[] GetRoundMessageAndSignatures(int round) {
                 if (secret != null) return null;
-                if (cooperatorIndexes.Count < t) return null;
+                if (cooperatorIndexes.Count < scheme.t) return null;
                 if (round > share.SignedMessages.Length) return null;
                 return share.SignedMessages[round - 1];
             }
@@ -271,38 +268,38 @@ namespace ThesisRationalSharing.Protocols {
             }
             public void UseRoundMessages(int round, Dictionary<F, SplitSignedValue.ForSender[]> messages) {
                 if (secret != null) return;
-                if (cooperatorIndexes.Count < t) return;
+                if (cooperatorIndexes.Count < scheme.t) return;
 
                 var lastCoops = new HashSet<F>(cooperatorIndexes);
                 var receivedMessages = new Dictionary<F, List<Point<F>>>();
                 foreach (var m in messages) {
                     if (!cooperatorIndexes.Contains(m.Key)) continue;
-                    if (!Enumerable.Range(0, omega + 1).All(oi => SplitSignedValue.Verify(m.Key, share.i, m.Value[oi], share.MessageVerifiers[round - 1][oi]))) {
+                    if (!Enumerable.Range(0, scheme.omega + 1).All(oi => SplitSignedValue.Verify(m.Key, share.i, m.Value[oi], share.MessageVerifiers[round - 1][oi]))) {
                         cooperatorIndexes.Remove(m.Key);
                         continue;
                     }
-                    receivedMessages.Add(m.Key, Enumerable.Range(0, omega + 1).Select(oi => new Point<F>(m.Key, m.Value[oi].Share)).ToList());
+                    receivedMessages.Add(m.Key, Enumerable.Range(0, scheme.omega + 1).Select(oi => new Point<F>(m.Key, m.Value[oi].Share)).ToList());
                 }
                 cooperatorIndexes.IntersectWith(messages.Keys);
 
                 lastCoops.ExceptWith(cooperatorIndexes);
                 var extraShares = new List<Dictionary<F, List<Point<F>>>>();
-                if (round > 1 && cooperatorIndexes.Count == t - 1) {
+                if (round > 1 && cooperatorIndexes.Count == scheme.t - 1) {
                     foreach (var c in lastCoops) {
                         extraShares.Add(new Dictionary<F, List<Point<F>>> {
                             {c, lastMessages[c].Zip(share.ShortMessage, (p, n) => new Point<F>(c, p.Y.Plus(n))).ToList()}
                         });
                     }
-                } else if (cooperatorIndexes.Count >= t) {
+                } else if (cooperatorIndexes.Count >= scheme.t) {
                     extraShares.Add(new Dictionary<F, List<Point<F>>>());
                 }
                 lastMessages = receivedMessages;
 
-                if (cooperatorIndexes.Count < t - 1) return;
+                if (cooperatorIndexes.Count < scheme.t - 1) return;
                 foreach (var ex in extraShares) {
                     var c = receivedMessages.Concat(ex).ToArray();
-                    var s = Enumerable.Range(0, c.First().Value.Count()).Select(i => ShamirSecretSharing<F>.CombineShares(t, c.Select(e => e.Value[i]).ToArray())).ToArray();
-                    if (s.Skip(1).All(e => e.Equals(e.Zero))) {
+                    var s = Enumerable.Range(0, c.First().Value.Count()).Select(i => ShamirSecretSharing<F>.CombineShares(scheme.t, c.Select(e => e.Value[i]).ToArray())).ToArray();
+                    if (s.Skip(1).All(e => e.IsZero)) {
                         secret = Tuple.Create(s.First());
                         return;
                     }
@@ -314,15 +311,13 @@ namespace ThesisRationalSharing.Protocols {
         public class MaliciousPlayer : IPlayer {
             public readonly Share share;
             public readonly ISecureRandomNumberGenerator randomMessageGenerator;
-            public readonly int omega;
+            public readonly SUIP<F> scheme;
             public readonly IEnumerable<F> playerIndexes;
-            public readonly int t;
-            public MaliciousPlayer(Share share, int n, int t, ISecureRandomNumberGenerator randomMessageGenerator, int omega) { 
+            public MaliciousPlayer(Share share, SUIP<F> scheme, ISecureRandomNumberGenerator randomMessageGenerator) { 
                 this.share = share; 
-                this.playerIndexes = ShareIndices(n, share.i);
+                this.playerIndexes = scheme.ShareIndices();
                 this.randomMessageGenerator = randomMessageGenerator;
-                this.omega = omega;
-                this.t = t;
+                this.scheme = scheme;
             }
             public F Index { get { return share.i; } }
             public IEnumerable<F> GetRoundMessageReceivers() { return randomMessageGenerator == null ? new F[0] { } : playerIndexes; }
@@ -330,9 +325,9 @@ namespace ThesisRationalSharing.Protocols {
             public string DoneReason() { return "Malicious"; }
             public SplitSignedValue.ForSender[] GetRoundMessageAndSignatures(int round) {
                 if (randomMessageGenerator == null) return null;
-                return Enumerable.Range(0, omega + 1).Select(oi => {
+                return Enumerable.Range(0, scheme.omega + 1).Select(oi => {
                     var m = share.i.Random(randomMessageGenerator);
-                    return SplitSignedValue.FromValue(m, t, playerIndexes.Count(), playerIndexes, randomMessageGenerator).WithOnlySignaturesFor(share.i);
+                    return SplitSignedValue.FromValue(m, scheme.t, playerIndexes.Count(), playerIndexes, randomMessageGenerator).WithOnlySignaturesFor(share.i);
                 }).ToArray();
             }
             public void UseRoundMessages(int round, Dictionary<F, SplitSignedValue.ForSender[]> messages) { }

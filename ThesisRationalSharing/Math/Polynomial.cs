@@ -16,13 +16,20 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
     /// <summary>The polynomial's coefficients in little-endian order.</summary>
     public IEnumerable<T> Coefficients { get { return _coefficients ?? new T[0]; } }
 
+    private T Field {
+        get {
+            Contract.Requires(!this.IsZero);
+            return _coefficients[0];
+        }
+    }
+
     /// <summary>
     /// Trivial constructor.
     /// Coefficients must be non-empty and not end in trailing zeroes.
     /// Use default value or constructor to get the zero polynomial.
     /// </summary>
     private Polynomial(T[] normalizedCoefficients) {
-        Contract.Requires(!normalizedCoefficients.Last().Equals(normalizedCoefficients.Last().Zero));
+        Contract.Requires(!normalizedCoefficients.Last().IsZero);
         this._coefficients = normalizedCoefficients;
     }
 
@@ -35,8 +42,7 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
         var coefs = coefficients.ToArray();
         int n = coefs.Length;
         if (n == 0) return default(Polynomial<T>);
-        var zero = coefficients.First().Zero;
-        while (n > 0 && coefs[n - 1].Equals(zero)) {
+        while (n > 0 && coefs[n - 1].IsZero) {
             n -= 1;
         }
 
@@ -51,9 +57,9 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
     /// <summary>Evaluates the polynomial's y coordinate at the given x coordinate.</summary>
     [Pure]
     public T EvaluateAt(T x) {
-        if (IsZero) return x.Zero;
-        var total = x.Zero;
-        var factor = x.One;
+        if (this.IsZero) return x.Zero;
+        var total = this.Field.Zero;
+        var factor = this.Field.One;
         foreach (var c in _coefficients) {
             total = total.Plus(c.Times(factor));
             factor = factor.Times(x);
@@ -68,8 +74,12 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
     public static Polynomial<T> operator +(Polynomial<T> value1, Polynomial<T> value2) {
         if (value1.IsZero) return value2;
         if (value2.IsZero) return value1;
-        var zero = value1._coefficients.First().Zero;
-        return FromCoefficients(value1._coefficients.ZipPad(value2._coefficients, (v1, v2) => v1.Plus(v2), zero, zero));
+        var zero = value1.Field.Zero;
+        return FromCoefficients(value1._coefficients.ZipPad(
+            value2._coefficients, 
+            (v1, v2) => v1.Plus(v2), 
+            value1.Field.Zero, 
+            value2.Field.Zero));
     }
     public static Polynomial<T> operator *(Polynomial<T> value, T factor) {
         if (value.IsZero) return value;
@@ -79,8 +89,7 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
     public static Polynomial<T> operator <<(Polynomial<T> value, int shift) {
         Contract.Requires(shift >= 0);
         if (value.IsZero) return value;
-        var zero = value._coefficients.First().Zero;
-        return FromCoefficients(Enumerable.Repeat(zero, shift).Concat(value._coefficients));
+        return FromCoefficients(Enumerable.Repeat(value.Field.Zero, shift).Concat(value._coefficients));
     }
 
     public static Polynomial<T> operator -(Polynomial<T> value1, Polynomial<T> value2) {
@@ -93,9 +102,8 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
     public static Polynomial<T> operator *(Polynomial<T> value1, Polynomial<T> value2) {
         if (value1.IsZero) return value1;
         if (value2.IsZero) return value2;
-        var zero = value1._coefficients.First().Zero;
 
-        var coefs = Enumerable.Repeat(zero, Math.Max(value1.Degree + value2.Degree, 0) + 1).ToArray();
+        var coefs = Enumerable.Repeat(value1.Field.Zero, Math.Max(value1.Degree + value2.Degree, 0) + 1).ToArray();
         for (int i = 0; i <= value1.Degree; i++) {
             for (int j = 0; j <= value2.Degree; j++) {
                 coefs[i + j] = coefs[i + j].Plus(value1._coefficients[i].Times(value2._coefficients[j]));
@@ -126,15 +134,15 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
     }
 
     private static String RepresentCoefficient(T factor, int power) {
-        if (factor.Equals(factor.Zero)) return "0";
-        if (power == 0) return factor.SequenceRepresentationItem;
+        if (factor.IsZero) return "0";
+        if (power == 0) return factor.ListItemToString;
         String x = "x" + (power == 1 ? "" : "^" + power);
-        if (factor.Equals(factor.One)) return x;
-        return factor.SequenceRepresentationItem + x;
+        if (factor.IsOne) return x;
+        return factor.ListItemToString + x;
     }
     public override string ToString() {
         if (this.IsZero) return "0";
-        return String.Join(" + ", _coefficients.Select((e, i) => RepresentCoefficient(e, i)).Where(e => e != "0").Reverse()) + _coefficients.First().SequenceRepresentationSuffix;
+        return String.Join(" + ", _coefficients.Select((e, i) => RepresentCoefficient(e, i)).Where(e => e != "0").Reverse()) + _coefficients.First().ListToStringSuffix;
     }
 
     public static Polynomial<T> operator /(Polynomial<T> numerator, Polynomial<T> denominator) {
@@ -150,7 +158,7 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
         Contract.Requires(!divisor.IsZero);
         Contract.Ensures(Contract.Result<Tuple<Polynomial<T>, Polynomial<T>>>().Item1 * divisor + Contract.Result<Tuple<Polynomial<T>, Polynomial<T>>>().Item2 == this);
         if (this.IsZero) return Tuple.Create(this, this);
-        var zero = this._coefficients.First().Zero;
+        var zero = this.Field.Zero;
 
         var quotientCoefs = Enumerable.Repeat(zero, Math.Max(0, this.Degree - divisor.Degree + 1)).ToArray();
         var remainderCoefs = this._coefficients.ToArray();
@@ -159,7 +167,7 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
         var normalizedDivisor = divisor * divisorInverseFactor;
         for (int i = remainderCoefs.Length - 1; i >= divisor.Degree; i--) {
             var c = remainderCoefs[i];
-            if (c.Equals(c.Zero)) continue;
+            if (c.IsZero) continue;
             //inlined: quotient += c * divisorInverseFactor << degreeDif
             quotientCoefs[i - divisor.Degree] = c.Times(divisorInverseFactor);
             //inlined: remainder -= c * normalizedDivisor << degreeDif
@@ -180,7 +188,8 @@ public struct Polynomial<T> : IEquatable<Polynomial<T>> where T : IField<T>, IEq
         if (pts.Length == 0) return default(Polynomial<T>);
         if (pts.Length == 1) return FromCoefficients(new T[] { coords.Single().Y });
 
-        var U = FromCoefficients(new[] { pts.First().X.One });
+        var fieldOne = pts.First().X.One;
+        var U = FromCoefficients(new[] { fieldOne });
         var X = U << 1;
 
         var fullNumerator = pts.Select(e => X - U * e.X).Product();

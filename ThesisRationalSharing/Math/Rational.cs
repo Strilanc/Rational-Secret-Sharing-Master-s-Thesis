@@ -185,12 +185,26 @@ public struct Rational : IEquatable<Rational>, IComparable<Rational>, IField<Rat
         get { return 1/this; }
     }
 
-    string IField<Rational>.SequenceRepresentationItem {
+    string IField<Rational>.ListItemToString {
         get { return ToString(); }
     }
 
-    string IField<Rational>.SequenceRepresentationSuffix {
+    string IField<Rational>.ListToStringSuffix {
         get { return ""; }
+    }
+
+
+    public bool IsZero {
+        get { return this == Rational.Zero; }
+    }
+
+    public bool IsOne {
+        get { return this == Rational.One; }
+    }
+
+
+    public Rational PlusOne() {
+        return this.Plus(Rational.One);
     }
 }
 public static class RationalExtensions {

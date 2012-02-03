@@ -8,8 +8,10 @@ using System.Diagnostics;
 
 public class ShamirSecretSharing<F> where F : IFiniteField<F>, IEquatable<F> {
     public static IEnumerable<Point<F>> GenerateShares(F secret, int threshold, ISecureRandomNumberGenerator r) {
+        var fieldOne = secret.One;
+
         var poly = r.GenerateNextPolynomialWithSpecifiedZero(threshold - 1, secret);
-        for (var i = secret.One; !i.Equals(secret.Zero); i = i.Plus(secret.One)) {
+        for (var i = fieldOne; !i.IsZero; i = i.PlusOne()) {
             yield return Point<F>.FromPoly(poly, i);
         }
     }
@@ -23,9 +25,9 @@ public class ShamirSecretSharing<F> where F : IFiniteField<F>, IEquatable<F> {
     }
     public static Tuple<F> TryCombineShares(int degree, IList<Point<F>> shares) {
         if (shares.Count < degree) return null;
-        var zero = shares.First().X.Zero;
         var poly = Polynomial<F>.FromInterpolation(shares.Take(degree));
         if (shares.Any(e => !poly.EvaluateAt(e.X).Equals(e.Y))) return null;
-        return Tuple.Create(poly.EvaluateAt(zero));
+        var fieldZero = shares.First().X.Zero;
+        return Tuple.Create(poly.EvaluateAt(fieldZero));
     }
 }
