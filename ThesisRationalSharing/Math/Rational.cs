@@ -5,7 +5,7 @@ using System.Numerics;
 
 ///<summary>An arbitrary-precision rational number.</summary>
 [DebuggerDisplay("{ToString()}")]
-public struct Rational : IEquatable<Rational>, IComparable<Rational>, IField<Rational> {
+public struct Rational : IEquatable<Rational>, IComparable<Rational> {
     private readonly BigInteger _numerator;
     private readonly BigInteger _denominator;
 
@@ -158,53 +158,6 @@ public struct Rational : IEquatable<Rational>, IComparable<Rational>, IField<Rat
     }
     public static implicit operator Rational(BigInteger value) {
         return new Rational(value, 1);
-    }
-
-
-    Rational IField<Rational>.Zero {
-        get { return Rational.Zero; }
-    }
-
-    Rational IField<Rational>.One {
-        get { return Rational.One; }
-    }
-
-    public Rational Plus(Rational other) {
-        return this + other;
-    }
-
-    public Rational Times(Rational other) {
-        return this * other;
-    }
-
-    Rational IField<Rational>.AdditiveInverse {
-        get { return -this; }
-    }
-
-    Rational IField<Rational>.MultiplicativeInverse {
-        get { return 1/this; }
-    }
-
-    string IField<Rational>.ListItemToString {
-        get { return ToString(); }
-    }
-
-    string IField<Rational>.ListToStringSuffix {
-        get { return ""; }
-    }
-
-
-    public bool IsZero {
-        get { return this == Rational.Zero; }
-    }
-
-    public bool IsOne {
-        get { return this == Rational.One; }
-    }
-
-
-    public Rational PlusOne() {
-        return this.Plus(Rational.One);
     }
 }
 public static class RationalExtensions {

@@ -8,14 +8,15 @@ using System.Diagnostics.Contracts;
 
 namespace ThesisRationalSharing.Protocols {
     [DebuggerDisplay("{ToString()}")]
-    public class SUIP<F> where F : IFiniteField<F>, IEquatable<F> {
+    public class SUIP<F> {
+        ///<summary>A SUIP share of a secret.</summary>
         [DebuggerDisplay("{ToString()}")]
         public class Share {
-            public readonly SplitSignedValue.ForReceiver[][] MessageVerifiers;
-            public readonly SplitSignedValue.ForSender[][] SignedMessages;
+            public readonly AuthenticatedMessageData.ForReceiver[][] MessageVerifiers;
+            public readonly AuthenticatedMessageData.ForSender[][] SignedMessages;
             public readonly F[] ShortMessage;
             public readonly F i; //share index
-            public Share(F i, SplitSignedValue.ForReceiver[][] messageVerifiers, SplitSignedValue.ForSender[][] signedMessages, F[] shortMessage) {
+            public Share(F i, AuthenticatedMessageData.ForReceiver[][] messageVerifiers, AuthenticatedMessageData.ForSender[][] signedMessages, F[] shortMessage) {
                 this.i = i;
                 this.MessageVerifiers = messageVerifiers;
                 this.SignedMessages = signedMessages;
@@ -26,17 +27,25 @@ namespace ThesisRationalSharing.Protocols {
             }
         }
 
-        public readonly int t;
-        public readonly int n;
-        public readonly F field;
+        ///<summary>Threshold number of shares required to reconstruct a secret.</summary>
+        public readonly int ThresholdShareCount;
+        ///<summary>Total number of shares created for a secret.</summary>
+        public readonly int TotalShareCount;
+        ///<summary>Finite field secrets are chosen from.</summary>
+        public readonly IFiniteField<F> Field;
+        ///<summary>Marginal probability of the definitive round occuring per round.</summary>
         public readonly Rational alpha;
+        ///<summary>Marginal probability of a list ending per round.</summary>
         public readonly Rational gamma;
+        ///<summary>Number of indicators.</summary>
         public readonly int omega;
+        ///<summary>Minimum list size.</summary>
         public readonly int beta;
-        public SUIP(int t, int n, F field, Rational alpha, Rational gamma, int omega, int beta) {
-            this.t = t;
-            this.n = n;
-            this.field = field;
+
+        public SUIP(int t, int n, IFiniteField<F> field, Rational alpha, Rational gamma, int omega, int beta) {
+            this.ThresholdShareCount = t;
+            this.TotalShareCount = n;
+            this.Field = field;
             this.alpha = alpha;
             this.gamma = gamma;
             this.omega = omega;
@@ -44,10 +53,10 @@ namespace ThesisRationalSharing.Protocols {
         }
 
         private F[] ShareIndices() {
-            var r = new F[n];
-            r[0] = field.One;
-            for (int i = 1; i < n; i++)
-                r[i] = r[i - 1].PlusOne();
+            var r = new F[TotalShareCount];
+            r[0] = Field.One;
+            for (int i = 1; i < TotalShareCount; i++)
+                r[i] = Field.Plus(r[i - 1], Field.One);
             return r;
         }
         private BigInteger ChooseDefinitiveRound(ISecureRandomNumberGenerator rng, BigInteger Lc) {
@@ -63,43 +72,49 @@ namespace ThesisRationalSharing.Protocols {
             return r;
         }
         
-        private static Dictionary<F, Tuple<Polynomial<F>, Point<F>>> SignMessage(F message, F sender, IEnumerable<F> receivers, ISecureRandomNumberGenerator rng) {
-            return receivers.ToDictionary(e => e, e => LinePointCommitment<F>.CreateSignedMessageAndVerifier(message, rng));
+        private Dictionary<F, Tuple<Polynomial<F>, Point<F>>> SignMessage(F message, F sender, IEnumerable<F> receivers, ISecureRandomNumberGenerator rng) {
+            return receivers.ToDictionary(e => e, e => LinePointCommitment.CreateSignedMessageAndVerifier(Field, message, rng));
         }
+
+        ///<summary>The data used to sign and verify the messages for a value split into shares.</summary>
         [DebuggerDisplay("{ToString()}")]
-        public class SplitSignedValue {
+        public class AuthenticatedMessageData {
+            ///<summary>The data used to sign the messages for one of the shares of a value split into shares.</summary>
             [DebuggerDisplay("{ToString()}")]
             public class ForSender {
-                private readonly Dictionary<F, Polynomial<F>> _state;
-                private ForSender(Dictionary<F, Polynomial<F>> _state) {
-                    this._state = _state;
+                private readonly IField<F> Field;
+                private readonly Dictionary<F, Polynomial<F>> _signatures;
+                private ForSender(IField<F> field, Dictionary<F, Polynomial<F>> signatures) {
+                    this._signatures = signatures;
+                    this.Field = field;
                 }
-                private F Field { get { return _state.Keys.First().Zero; } }
                 
-                public static ForSender From(F sender, SplitSignedValue source) {
-                    return new ForSender(source._state[sender].ToDictionary(f => f.Key, f => f.Value.Item1));
+                public static ForSender From(IField<F> field, F sender, AuthenticatedMessageData source) {
+                    return new ForSender(field, source._state[sender].ToDictionary(f => f.Key, f => f.Value.Item1));
                 }
 
                 public F Share {
                     get {
-                        var p = _state.First().Value;
-                        return p.EvaluateAt(Field.One).Minus(p.EvaluateAt(Field.Zero));
+                        var p = _signatures.First().Value;
+                        return Field.Minus(p.EvaluateAt(Field.One), p.EvaluateAt(Field.Zero));
                     }
                 }
                 public Polynomial<F> GetMessageSignatureTo(F receiver) {
-                    return _state[receiver];
+                    return _signatures[receiver];
                 }
 
                 public override string ToString() {
                     return "SplitSignedValue.ForSender: Share = " + Share;
                 }
             }
+            ///<summary>The data used to verify the messages for one of the shares of a value split into shares.</summary>
+            [DebuggerDisplay("{ToString()}")]
             public class ForReceiver {
                 private readonly Dictionary<F, Point<F>> _state;
                 private ForReceiver(Dictionary<F, Point<F>> _state) {
                     this._state = _state;
                 }
-                public static ForReceiver From(F receiver, SplitSignedValue source) {
+                public static ForReceiver From(F receiver, AuthenticatedMessageData source) {
                     return new ForReceiver(source._state.ToDictionary(e => e.Key, e => e.Value[receiver].Item2));
                 }
                 public Point<F> GetMessageVerifierFrom(F sender) {
@@ -111,19 +126,20 @@ namespace ThesisRationalSharing.Protocols {
             }
 
             private readonly Dictionary<F, Dictionary<F, Tuple<Polynomial<F>, Point<F>>>> _state;
-            private F Field { get { return _state.Keys.First().Zero; } } 
-            private SplitSignedValue(Dictionary<F, Dictionary<F, Tuple<Polynomial<F>, Point<F>>>> _state) {
+            private readonly IField<F> Field;
+            private AuthenticatedMessageData(IField<F> field, Dictionary<F, Dictionary<F, Tuple<Polynomial<F>, Point<F>>>> _state) {
                 this._state = _state;
+                this.Field = field;
             }
-            public static SplitSignedValue FromValue(F value, int t, int n, IEnumerable<F> players, ISecureRandomNumberGenerator rng) {
-                var shares = ShamirSecretSharing<F>.CreateShares(value, t, n, rng);
+            public static AuthenticatedMessageData FromValue(SUIP<F> scheme, F value, ISecureRandomNumberGenerator rng) {
+                var shares = ShamirSecretSharing.CreateShares(scheme.Field, value, scheme.ThresholdShareCount, scheme.TotalShareCount, rng);
                 var shareDic = shares.ToDictionary(e => e.X, e => e.Y);
-                var signedMessages = players.ToDictionary(e => e, e => SignMessage(shareDic[e], e, players, rng));
-                return new SplitSignedValue(signedMessages);
+                var signedMessages = scheme.ShareIndices().ToDictionary(e => e, e => scheme.SignMessage(shareDic[e], e, scheme.ShareIndices(), rng));
+                return new AuthenticatedMessageData(scheme.Field, signedMessages);
             }
             public F Value {
                 get {
-                    return Polynomial<F>.FromInterpolation(_state.Keys.Select(e => new Point<F>(e, ShareYFor(e)))).EvaluateAt(Field.Zero);
+                    return Polynomial<F>.FromInterpolation(Field, _state.Keys.Select(e => new Point<F>(Field, e, ShareYFor(e)))).EvaluateAt(Field.Zero);
                 }
             }
             public Point<F> GetMessageVerifierFromTo(F sender, F receiver) {
@@ -139,10 +155,10 @@ namespace ThesisRationalSharing.Protocols {
                 return ForReceiver.From(receiver, this);
             }
             public ForSender WithOnlySignaturesFor(F sender) {
-                return ForSender.From(sender, this);
+                return ForSender.From(Field, sender, this);
             }
             public static bool Verify(F sender, F receiver, ForSender senderStuff, ForReceiver receiverStuff) {
-                return LinePointCommitment<F>.AuthenticateMessageUsingVerifier(
+                return LinePointCommitment.AuthenticateMessageUsingVerifier(
                     senderStuff.GetMessageSignatureTo(receiver),
                     receiverStuff.GetMessageVerifierFrom(sender));
             }
@@ -162,15 +178,15 @@ namespace ThesisRationalSharing.Protocols {
 
             var SI = Enumerable.Range(1, (int)Ln + 1).Select(i =>
                         Enumerable.Range(0, omega + 1).Select(j => {
-                            var m = i == r ? (j == 0 ? secret : field.Zero) : field.Random(rng);
-                            return SplitSignedValue.FromValue(m, t, n, indexes, rng);
+                            var m = i == r ? (j == 0 ? secret : Field.Zero) : Field.Random(rng);
+                            return AuthenticatedMessageData.FromValue(this, m, rng);
                         }).ToArray()
                     ).ToArray();
 
             var X = Enumerable.Range(0, omega + 1).Select(j => {
                 var vn = SI[(int)r - 1][j].ShareYFor(c);
                 var vp = SI[(int)r - 2][j].ShareYFor(c);
-                return vn.Minus(vp);
+                return Field.Minus(vn, vp);
             }).ToArray();
 
             return indexes.Select(i => {
@@ -184,20 +200,20 @@ namespace ThesisRationalSharing.Protocols {
         /// Combines a group of shares as if the players holding the shares were not adversarial.
         /// </summary>
         public F CoalitionCombine(Share[] availableShares) {
-            if (availableShares.Length < t) throw new ArgumentException("Not enough shares");
+            if (availableShares.Length < ThresholdShareCount) throw new ArgumentException("Not enough shares");
             var sr = availableShares.MinBy(e => e.SignedMessages.Length);
             for (var r = 1; r <= sr.SignedMessages.Length + 1; r++) {
                 var M = Enumerable.Range(0, omega + 1).Select(oi =>
-                            ShamirSecretSharing<F>.CombineShares(t,
+                            ShamirSecretSharing.CombineShares(Field, ThresholdShareCount,
                                 availableShares.Select(e => {
                                     F y;
                                     if (e == sr && r > e.SignedMessages.Length)
-                                        y = e.ShortMessage[oi].Plus(e.SignedMessages.Last()[oi].Share);
+                                        y = Field.Plus(e.ShortMessage[oi], e.SignedMessages.Last()[oi].Share);
                                     else
                                         y = e.SignedMessages[r - 1][oi].Share;
-                                    return new Point<F>(e.i, y);
+                                    return new Point<F>(Field, e.i, y);
                                 }).ToArray())).ToArray();
-                if (M.Skip(1).All(e => e.IsZero)) return M.First();
+                if (M.Skip(1).All(e => Field.IsZero(e))) return M.First();
             }
             throw new Exception();
         }
@@ -210,9 +226,9 @@ namespace ThesisRationalSharing.Protocols {
             var r = 1;
             while (players.Any(e => e.DoneReason() == null)) {
                 var messages = players.ToDictionary(e => e.Index, e => Tuple.Create(e.GetRoundMessageAndSignatures(r), e.GetRoundMessageReceivers()));
-                var receivedMessages = new Dictionary<F, Dictionary<F, SplitSignedValue.ForSender[]>>();
+                var receivedMessages = new Dictionary<F, Dictionary<F, AuthenticatedMessageData.ForSender[]>>();
                 foreach (var receiver in players) {
-                    var d = new Dictionary<F, SplitSignedValue.ForSender[]>();
+                    var d = new Dictionary<F, AuthenticatedMessageData.ForSender[]>();
                     receivedMessages[receiver.Index] = d;
                     foreach (var sender in players) {
                         if (messages[sender.Index].Item1 != null && messages[sender.Index].Item2.Contains(receiver.Index)) {
@@ -228,9 +244,9 @@ namespace ThesisRationalSharing.Protocols {
 
         public interface IPlayer {
             F Index { get; }
-            SplitSignedValue.ForSender[] GetRoundMessageAndSignatures(int round);
+            AuthenticatedMessageData.ForSender[] GetRoundMessageAndSignatures(int round);
             IEnumerable<F> GetRoundMessageReceivers();
-            void UseRoundMessages(int round, Dictionary<F, SplitSignedValue.ForSender[]> messages);
+            void UseRoundMessages(int round, Dictionary<F, AuthenticatedMessageData.ForSender[]> messages);
             Tuple<F> RecoveredSecretValue { get; }
             string DoneReason();
         }
@@ -254,52 +270,52 @@ namespace ThesisRationalSharing.Protocols {
 
             public string DoneReason() {
                 if (secret != null) return "Have secret";
-                if (cooperatorIndexes.Count < scheme.t) return "Not enough cooperators";
+                if (cooperatorIndexes.Count < scheme.ThresholdShareCount) return "Not enough cooperators";
                 return null;
             }
-            public SplitSignedValue.ForSender[] GetRoundMessageAndSignatures(int round) {
+            public AuthenticatedMessageData.ForSender[] GetRoundMessageAndSignatures(int round) {
                 if (secret != null) return null;
-                if (cooperatorIndexes.Count < scheme.t) return null;
+                if (cooperatorIndexes.Count < scheme.ThresholdShareCount) return null;
                 if (round > share.SignedMessages.Length) return null;
                 return share.SignedMessages[round - 1];
             }
             public IEnumerable<F> GetRoundMessageReceivers() {
                 return cooperatorIndexes;
             }
-            public void UseRoundMessages(int round, Dictionary<F, SplitSignedValue.ForSender[]> messages) {
+            public void UseRoundMessages(int round, Dictionary<F, AuthenticatedMessageData.ForSender[]> messages) {
                 if (secret != null) return;
-                if (cooperatorIndexes.Count < scheme.t) return;
+                if (cooperatorIndexes.Count < scheme.ThresholdShareCount) return;
 
                 var lastCoops = new HashSet<F>(cooperatorIndexes);
                 var receivedMessages = new Dictionary<F, List<Point<F>>>();
                 foreach (var m in messages) {
                     if (!cooperatorIndexes.Contains(m.Key)) continue;
-                    if (!Enumerable.Range(0, scheme.omega + 1).All(oi => SplitSignedValue.Verify(m.Key, share.i, m.Value[oi], share.MessageVerifiers[round - 1][oi]))) {
+                    if (!Enumerable.Range(0, scheme.omega + 1).All(oi => AuthenticatedMessageData.Verify(m.Key, share.i, m.Value[oi], share.MessageVerifiers[round - 1][oi]))) {
                         cooperatorIndexes.Remove(m.Key);
                         continue;
                     }
-                    receivedMessages.Add(m.Key, Enumerable.Range(0, scheme.omega + 1).Select(oi => new Point<F>(m.Key, m.Value[oi].Share)).ToList());
+                    receivedMessages.Add(m.Key, Enumerable.Range(0, scheme.omega + 1).Select(oi => new Point<F>(scheme.Field, m.Key, m.Value[oi].Share)).ToList());
                 }
                 cooperatorIndexes.IntersectWith(messages.Keys);
 
                 lastCoops.ExceptWith(cooperatorIndexes);
                 var extraShares = new List<Dictionary<F, List<Point<F>>>>();
-                if (round > 1 && cooperatorIndexes.Count == scheme.t - 1) {
+                if (round > 1 && cooperatorIndexes.Count == scheme.ThresholdShareCount - 1) {
                     foreach (var c in lastCoops) {
                         extraShares.Add(new Dictionary<F, List<Point<F>>> {
-                            {c, lastMessages[c].Zip(share.ShortMessage, (p, n) => new Point<F>(c, p.Y.Plus(n))).ToList()}
+                            {c, lastMessages[c].Zip(share.ShortMessage, (p, n) => new Point<F>(scheme.Field, c, scheme.Field.Plus(p.Y, n))).ToList()}
                         });
                     }
-                } else if (cooperatorIndexes.Count >= scheme.t) {
+                } else if (cooperatorIndexes.Count >= scheme.ThresholdShareCount) {
                     extraShares.Add(new Dictionary<F, List<Point<F>>>());
                 }
                 lastMessages = receivedMessages;
 
-                if (cooperatorIndexes.Count < scheme.t - 1) return;
+                if (cooperatorIndexes.Count < scheme.ThresholdShareCount - 1) return;
                 foreach (var ex in extraShares) {
                     var c = receivedMessages.Concat(ex).ToArray();
-                    var s = Enumerable.Range(0, c.First().Value.Count()).Select(i => ShamirSecretSharing<F>.CombineShares(scheme.t, c.Select(e => e.Value[i]).ToArray())).ToArray();
-                    if (s.Skip(1).All(e => e.IsZero)) {
+                    var s = Enumerable.Range(0, c.First().Value.Count()).Select(i => ShamirSecretSharing.CombineShares(scheme.Field, scheme.ThresholdShareCount, c.Select(e => e.Value[i]).ToArray())).ToArray();
+                    if (s.Skip(1).All(e => scheme.Field.IsZero(e))) {
                         secret = Tuple.Create(s.First());
                         return;
                     }
@@ -323,19 +339,19 @@ namespace ThesisRationalSharing.Protocols {
             public IEnumerable<F> GetRoundMessageReceivers() { return randomMessageGenerator == null ? new F[0] { } : playerIndexes; }
             public Tuple<F> RecoveredSecretValue { get { return null; } }
             public string DoneReason() { return "Malicious"; }
-            public SplitSignedValue.ForSender[] GetRoundMessageAndSignatures(int round) {
+            public AuthenticatedMessageData.ForSender[] GetRoundMessageAndSignatures(int round) {
                 if (randomMessageGenerator == null) return null;
                 return Enumerable.Range(0, scheme.omega + 1).Select(oi => {
-                    var m = share.i.Random(randomMessageGenerator);
-                    return SplitSignedValue.FromValue(m, scheme.t, playerIndexes.Count(), playerIndexes, randomMessageGenerator).WithOnlySignaturesFor(share.i);
+                    var m = scheme.Field.Random(randomMessageGenerator);
+                    return AuthenticatedMessageData.FromValue(scheme, m, randomMessageGenerator).WithOnlySignaturesFor(share.i);
                 }).ToArray();
             }
-            public void UseRoundMessages(int round, Dictionary<F, SplitSignedValue.ForSender[]> messages) { }
+            public void UseRoundMessages(int round, Dictionary<F, AuthenticatedMessageData.ForSender[]> messages) { }
             public override string ToString() { return "SUIP Malicious Player " + share.i; }
         }
 
         public override string ToString() {
-            return String.Format("SBP: n={0}, t={1}", n, t);
+            return String.Format("SBP: n={0}, t={1}", TotalShareCount, ThresholdShareCount);
         }
     }
 }

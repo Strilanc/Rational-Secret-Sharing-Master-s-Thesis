@@ -67,6 +67,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Math\ModIntField.cs" />
+    <Compile Include="Math\RationalField.cs" />
     <Compile Include="Math\IField.cs" />
     <Compile Include="Crypto\IVerifiableRandomFunction.cs" />
     <Compile Include="Crypto\ICommitment.cs" />

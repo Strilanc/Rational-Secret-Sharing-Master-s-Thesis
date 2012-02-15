@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace ThesisRationalSharing.Protocols {
     [DebuggerDisplay("{ToString()}")]
-    public class ABIP<F, TVRFPub, TVRFPriv, TVRFProof> where F : IFiniteField<F>, IEquatable<F> {
+    public class ABIP<F, TVRFPub, TVRFPriv, TVRFProof> {
         [DebuggerDisplay("{ToString()}")]
         public class Share {
             public readonly Dictionary<F, TVRFPub> V; //public vrf keys
@@ -27,10 +27,10 @@ namespace ThesisRationalSharing.Protocols {
 
         public readonly int t;
         public readonly int n;
-        public readonly F field;
+        public readonly IFiniteField<F> field;
         public readonly IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs;
         public readonly Rational alpha;
-        public ABIP(int t, int n, F field, IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs, Rational alpha) {
+        public ABIP(int t, int n, IFiniteField<F> field, IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs, Rational alpha) {
             this.t = t;
             this.n = n;
             this.field = field;
@@ -42,7 +42,7 @@ namespace ThesisRationalSharing.Protocols {
             var r = new F[n];
             r[0] = field.One;
             for (int i = 1; i < n; i++)
-                r[i] = r[i - 1].PlusOne();
+                r[i] = field.Plus(r[i - 1], field.One);
             return r;
         }
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
@@ -54,9 +54,9 @@ namespace ThesisRationalSharing.Protocols {
             var V = indexes.MapTo(i => vg[i].Item1);
             var G = indexes.MapTo(i => vg[i].Item2);
 
-            var S = ShamirSecretSharing<F>.CreateShares(secret, t - 1, n, rng).KeyBy(e => e.X);
+            var S = ShamirSecretSharing.CreateShares(field, secret, t - 1, n, rng).KeyBy(e => e.X);
 
-            var Y = indexes.MapTo(i => S[i].Y.Minus(vrfs.Generate(G[i], r).Value));
+            var Y = indexes.MapTo(i => field.Minus(S[i].Y, vrfs.Generate(G[i], r).Value));
 
             return indexes.Select(i => new Share(i, V, Y, G[i])).ToArray();
         }
@@ -69,8 +69,8 @@ namespace ThesisRationalSharing.Protocols {
             var r = 1;
             while (true) {
                 var M = availableShares.Select(e => vrfs.Generate(e.G, r)).ToArray();
-                var S = availableShares.Zip(M, (e, m) => new Point<F>(e.i, m.Value.Plus(e.Y[e.i]))).ToArray();
-                var p = Polynomial<F>.FromInterpolation(S);
+                var S = availableShares.Zip(M, (e, m) => new Point<F>(field, e.i, field.Plus(m.Value, e.Y[e.i]))).ToArray();
+                var p = Polynomial<F>.FromInterpolation(field, S);
                 if (p.Degree <= t - 1) return p.EvaluateAt(field.Zero);
                 r += 1;
             }
@@ -89,7 +89,7 @@ namespace ThesisRationalSharing.Protocols {
                 foreach (var p in players)
                     p.StartRound(r);
                 for (int t = 1; t <= n; t++) {
-                    var sender = players.SingleOrDefault(e => e.Index.ToInt() == t);
+                    var sender = players.SingleOrDefault(e => field.ToInt(e.Index) == t);
                     var message = sender == null ? null : sender.GetRoundMessage(r);
                     var receivers = sender == null ? new F[0] : sender.GetMessageReceivers();
                     foreach (var p in players)
@@ -122,7 +122,7 @@ namespace ThesisRationalSharing.Protocols {
                 get { 
                     if (secret != null) return secret;
                     if (receivedShares.Count == scheme.t - 1 && lastRound.ProperMod(scheme.n) == 0)
-                        return Tuple.Create(Polynomial<F>.FromInterpolation(receivedShares.Values).EvaluateAt(scheme.field.Zero));
+                        return Tuple.Create(Polynomial<F>.FromInterpolation(scheme.field, receivedShares.Values).EvaluateAt(scheme.field.Zero));
                     return null;
                 } 
             }
@@ -150,7 +150,7 @@ namespace ThesisRationalSharing.Protocols {
             public void StartRound(int round) {
                 receivedShares.Clear();
                 foreach (var s in coalitionShares.Concat(new[] { share })) {
-                    receivedShares[s.i] = new Point<F>(s.i, scheme.vrfs.Generate(s.G, round).Value.Plus(share.Y[s.i]));
+                    receivedShares[s.i] = new Point<F>(scheme.field, s.i, scheme.field.Plus(scheme.vrfs.Generate(s.G, round).Value, share.Y[s.i]));
                 }
             }
             public IEnumerable<F> GetMessageReceivers() {
@@ -164,10 +164,10 @@ namespace ThesisRationalSharing.Protocols {
                     cooperatorIndexes.Remove(senderId);
                     return;
                 }
-                receivedShares[senderId] = new Point<F>(senderId, message.Value.Plus(share.Y[senderId]));
+                receivedShares[senderId] = new Point<F>(scheme.field, senderId, scheme.field.Plus(message.Value, share.Y[senderId]));
                 if (receivedShares.Count != scheme.t) return;
                 
-                var s = Polynomial<F>.FromInterpolation(receivedShares.Values);
+                var s = Polynomial<F>.FromInterpolation(scheme.field, receivedShares.Values);
                 if (s.Degree < scheme.t - 1) secret = Tuple.Create(s.EvaluateAt(scheme.field.Zero));
             }
             public override string ToString() { return "ABIP Rational Player " + share.i; }
@@ -186,7 +186,7 @@ namespace ThesisRationalSharing.Protocols {
             }
             public F Index { get { return share.i; } }
             public F GetRoundExpectedSender(int round) {
-                return this.share.Y.First().Value.FromInt((round - 1) % playerIndexes.Count() + 1);
+                return scheme.field.FromInt((round - 1) % playerIndexes.Count() + 1);
             }
             public IEnumerable<F> GetMessageReceivers() { return randomMessageGenerator == null ? new F[0] { } : playerIndexes; }
             public Tuple<F> RecoveredSecretValue { get { return null; } }

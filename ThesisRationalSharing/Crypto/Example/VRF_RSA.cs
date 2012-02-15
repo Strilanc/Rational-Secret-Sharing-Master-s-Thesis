@@ -11,9 +11,10 @@ using System.Diagnostics;
 public class VRF_RSA : IVerifiableRandomFunctionScheme<VRF_RSA.Key, VRF_RSA.Key, BigInteger, ModInt> {
     public readonly BigInteger P;
     public readonly BigInteger Q;
-    public readonly ModInt VRFValueField;
+    public readonly ModIntField VRFValueField;
 
-    public VRF_RSA(BigInteger p, BigInteger q, ModInt VRFValueField) {
+    public VRF_RSA(BigInteger p, BigInteger q, ModIntField VRFValueField) {
+        Contract.Requires(VRFValueField != null);
         Contract.Requires(p > 1);
         Contract.Requires(q > 1);
         this.P = p;

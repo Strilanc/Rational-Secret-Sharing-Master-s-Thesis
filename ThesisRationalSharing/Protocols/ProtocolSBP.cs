@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace ThesisRationalSharing.Protocols {
     [DebuggerDisplay("{ToString()}")]
-    public class SBP<F, TVRFPub, TVRFPriv, TVRFProof> where F : IFiniteField<F>, IEquatable<F> {
+    public class SBP<F, TVRFPub, TVRFPriv, TVRFProof> {
         [DebuggerDisplay("{ToString()}")]
         public class Share {
             public readonly ICommitment<F> c; //commitment
@@ -29,11 +29,11 @@ namespace ThesisRationalSharing.Protocols {
 
         public readonly int t;
         public readonly int n;
-        public readonly F field;
+        public readonly IFiniteField<F> field;
         public readonly ICommitmentScheme<F> cs;
         public readonly IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs;
         public readonly Rational alpha;
-        public SBP(int t, int n, F field, ICommitmentScheme<F> cs, IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs, Rational alpha) {
+        public SBP(int t, int n, IFiniteField<F> field, ICommitmentScheme<F> cs, IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs, Rational alpha) {
             this.t = t;
             this.n = n;
             this.field = field;
@@ -46,7 +46,7 @@ namespace ThesisRationalSharing.Protocols {
             var r = new F[n];
             r[0] = field.One;
             for (int i = 1; i < n; i++)
-                r[i] = r[i - 1].PlusOne();
+                r[i] = field.Plus(r[i - 1], field.One);
             return r;
         }
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
@@ -60,9 +60,9 @@ namespace ThesisRationalSharing.Protocols {
             
             var r = rng.GenerateNextValueGeometric(chanceStop: alpha, min: 1);
 
-            var S = ShamirSecretSharing<F>.CreateShares(secret, t, n, rng).KeyBy(e => e.X);
+            var S = ShamirSecretSharing.CreateShares(field, secret, t, n, rng).KeyBy(e => e.X);
 
-            var Y = indexes.MapTo(i => S[i].Y.Minus(vrfs.Generate(G[i], r).Value));
+            var Y = indexes.MapTo(i => field.Minus(S[i].Y, vrfs.Generate(G[i], r).Value));
 
             return indexes.Select(i => new Share(i, c, V, Y, G[i])).ToArray();
         }
@@ -76,8 +76,8 @@ namespace ThesisRationalSharing.Protocols {
             var c = availableShares.FirstOrDefault().c;
             while (true) {
                 var M = availableShares.Select(e => vrfs.Generate(e.G, r)).ToArray();
-                var S = availableShares.Zip(M, (e, m) => new Point<F>(e.i, m.Value.Plus(e.Y[e.i]))).ToArray();
-                var s = ShamirSecretSharing<F>.TryCombineShares(t, S);
+                var S = availableShares.Zip(M, (e, m) => new Point<F>(field, e.i, field.Plus(m.Value, e.Y[e.i]))).ToArray();
+                var s = ShamirSecretSharing.TryCombineShares(field, t, S);
                 if (s != null && c.Matches(s.Item1))
                     return s.Item1;
                 r += 1;
@@ -156,12 +156,12 @@ namespace ThesisRationalSharing.Protocols {
                         cooperatorIndexes.Remove(m.Key);
                         continue;
                     }
-                    S.Add(new Point<F>(m.Key, m.Value.Value.Plus(share.Y[m.Key])));
+                    S.Add(new Point<F>(scheme.field, m.Key, scheme.field.Plus(m.Value.Value, share.Y[m.Key])));
                 }
                 cooperatorIndexes.IntersectWith(messages.Keys);
                 if (cooperatorIndexes.Count < scheme.t) return;
 
-                var s = ShamirSecretSharing<F>.TryCombineShares(scheme.t, S);
+                var s = ShamirSecretSharing.TryCombineShares(scheme.field, scheme.t, S);
                 if (s != null && share.c.Matches(s.Item1)) secret = s;
             }
             public override string ToString() { return "SBP Rational Player " + share.i; }

@@ -9,7 +9,7 @@ namespace ThesisRationalSharingTest {
     public class ABCPTest {
         [TestMethod()]
         public void TestABCP() {
-            var field = new ModInt(0, 437597921); // large enough to make accidental discovery unlikely
+            var field = new ModIntField(437597921); // large enough to make accidental discovery unlikely
             var rng = new RNG_BlumBlumbShub(modulus: 997 * 991, seed: 4);
             var cs = new CommitSHA1Scheme();
             var vrf = new VRF_RSA(997, 991, field);
@@ -18,7 +18,7 @@ namespace ThesisRationalSharingTest {
             var alpha = new Rational(1, 10);
             var delta = 1;
 
-            for (var secret = field; secret.Value < 25; secret += 1) {
+            for (var secret = field.Zero; secret.Value < 25; secret += 1) {
                 var scheme = new ThesisRationalSharing.Protocols.ABCP<ModInt, VRF_RSA.Key, VRF_RSA.Key, BigInteger>(threshold, total, field, delta, cs, vrf, alpha);
                 var shares = scheme.Deal(secret, rng).Shuffle(rng);
                 Assert.IsTrue(scheme.CoalitionCombine(shares) == secret);
@@ -43,7 +43,7 @@ namespace ThesisRationalSharingTest {
         }
         [TestMethod()]
         public void TestABCPCollusion() {
-            var field = new ModInt(0, 437597921); // large enough to make accidental discovery unlikely
+            var field = new ModIntField(437597921); // large enough to make accidental discovery unlikely
             var rng = new RNG_BlumBlumbShub(modulus: 997 * 991, seed: 4);
             var cs = new CommitSHA1Scheme();
             var vrf = new VRF_RSA(997, 991, field);
@@ -54,7 +54,7 @@ namespace ThesisRationalSharingTest {
 
             var passes = 0;
             var attempts = Rational.Zero;
-            for (var secret = field; secret.Value < 5; secret += 1) {
+            for (var secret = field.Zero; secret.Value < 5; secret += 1) {
                 var scheme = new ThesisRationalSharing.Protocols.ABCP<ModInt, VRF_RSA.Key, VRF_RSA.Key, BigInteger>(threshold, total, field, delta, cs, vrf, alpha);
                 var shares = scheme.Deal(secret, rng).Shuffle(rng);
                 Assert.IsTrue(scheme.CoalitionCombine(shares) == secret);

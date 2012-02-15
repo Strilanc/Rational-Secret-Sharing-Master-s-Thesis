@@ -9,7 +9,7 @@ namespace ThesisRationalSharingTest {
     public class ABIPTest {
         [TestMethod()]
         public void TestABIP() {
-            var field = new ModInt(0, 1009);
+            var field = new ModIntField(1009);
             var rng = new RNG_BlumBlumbShub(modulus: 997 * 991, seed: 4);
             var vrf = new VRF_RSA(997, 991, field);
 
@@ -51,7 +51,7 @@ namespace ThesisRationalSharingTest {
                     }
                 }
             };
-            for (var secret = field; secret.Value < 25; secret += 1) {
+            for (var secret = field.Zero; secret.Value < 25; secret += 1) {
                 var threshold = 6;
                 var total = 9;
                 var alpha = new Rational(1, 4);
@@ -60,7 +60,7 @@ namespace ThesisRationalSharingTest {
                 f(secret, threshold, total, numColluders, numMalicious, alpha);
             }
             for (int i = 0; i < 5; i++) {
-                f(field - 1, 4, 6, 0, 3, Rational.One / 10);
+                f(field.Zero - 1, 4, 6, 0, 3, Rational.One / 10);
             }
 
             //non-colluding rational players may be beat by the coalition

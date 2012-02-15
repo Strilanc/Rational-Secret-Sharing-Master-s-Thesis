@@ -147,39 +147,33 @@ public static class Util {
             result += 1;
         return result;
     }
-    public static Polynomial<T> GenerateNextPolynomialWithSpecifiedZero<T>(this ISecureRandomNumberGenerator rng, int degree, T valueAtZero) where T : IFiniteField<T>, IEquatable<T> {
+    public static Polynomial<T> GenerateNextPolynomialWithSpecifiedZero<T>(this ISecureRandomNumberGenerator rng, IFiniteField<T> field, int degree, T valueAtZero) {
         Contract.Requires(rng != null);
         Contract.Requires(degree >= 0);
         var coefficients = new T[degree + 1];
         coefficients[0] = valueAtZero;
         for (int i = 1; i <= degree; i++) {
-            coefficients[i] = valueAtZero.Random(rng);
+            coefficients[i] = field.Random(rng);
         }
-        return Polynomial<T>.FromCoefficients(coefficients);
+        return Polynomial<T>.FromCoefficients(field, coefficients);
     }
-    public static Polynomial<T> GenerateNextPolynomial<T>(this ISecureRandomNumberGenerator rng, T field, int degree) where T : IFiniteField<T>, IEquatable<T> {
+    public static Polynomial<T> GenerateNextPolynomial<T>(this ISecureRandomNumberGenerator rng, IFiniteField<T> field, int degree) {
         Contract.Requires(rng != null);
         Contract.Requires(degree >= 0);
         var coefficients = new T[degree + 1];
         for (int i = 0; i <= degree; i++) {
             coefficients[i] = field.Random(rng);
         }
-        return Polynomial<T>.FromCoefficients(coefficients);
+        return Polynomial<T>.FromCoefficients(field, coefficients);
     }
-    public static ModInt Sum(this IEnumerable<ModInt> sequence) {
-        return sequence.Aggregate((a, e) => a + e);
+    public static Polynomial<T> Sum<T>(this IEnumerable<Polynomial<T>> sequence, IField<T> field) {
+        return sequence.Aggregate(Polynomial<T>.Zero(field), (a, e) => a + e);
     }
-    public static Polynomial<T> Sum<T>(this IEnumerable<Polynomial<T>> sequence) where T : IField<T>, IEquatable<T> {
-        return sequence.Aggregate((a, e) => a + e);
+    public static T Product<T>(this IEnumerable<T> sequence, IField<T> field) {
+        return sequence.Aggregate(field.One, (a, e) => field.Times(a, e));
     }
-    public static T Product<T>(this IEnumerable<T> sequence) where T : IField<T>, IEquatable<T> {
-        return sequence.Aggregate((a, e) => a.Times(e));
-    }
-    public static ModInt Product(this IEnumerable<ModInt> sequence) {
-        return sequence.Aggregate((a, e) => a * e);
-    }
-    public static Polynomial<T> Product<T>(this IEnumerable<Polynomial<T>> sequence) where T : IField<T>, IEquatable<T> {
-        return sequence.Aggregate((a, e) => a * e);
+    public static Polynomial<T> Product<T>(this IEnumerable<Polynomial<T>> sequence, IField<T> field) {
+        return sequence.Aggregate(Polynomial<T>.One(field), (a, e) => a * e);
     }
 
     ///<summary>Zips two sequences, padding the shorter sequence with default items until it matches the length of the longer sequence.</summary>

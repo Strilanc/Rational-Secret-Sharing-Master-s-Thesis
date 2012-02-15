@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 ///<summary>Modular integers with associated arithmetic.</summary>
 [DebuggerDisplay("{ToString()}")]
-public struct ModInt : IEquatable<ModInt>, IFiniteField<ModInt> {
+public struct ModInt : IEquatable<ModInt> {
     public readonly BigInteger Modulus;
     public readonly BigInteger Value;
 
@@ -113,56 +113,11 @@ public struct ModInt : IEquatable<ModInt>, IFiniteField<ModInt> {
         return Value + " (mod " + Modulus + ")";
     }
 
-    public ModInt Zero { get { return new ModInt(0, this.Modulus); } }
-    public ModInt One { get { return new ModInt(1 % this.Modulus, this.Modulus); } }
-
-    public ModInt Plus(ModInt other) {
-        return this + other;
-    }
-
-    public ModInt Times(ModInt other) {
-        return this * other;
-    }
-
-    public ModInt AdditiveInverse { get { return -this; } }
-
-    public string ListItemToString {
-        get { return this.Value.ToString(); }
-    }
-
-    public string ListToStringSuffix {
-        get { return " (mod " + this.Modulus.ToString() + ")"; }
-    }
-
-    public ModInt Random(ISecureRandomNumberGenerator rng) {
-        return new ModInt(rng.GenerateNextValueMod(this.Modulus), this.Modulus);
-    }
-
-
-    public BigInteger FieldSize {
-        get { return Modulus; }
-    }
-
-
-    public BigInteger ToInt() {
-        return this.Value;
-    }
-
-    public ModInt FromInt(BigInteger i) {
-        return Zero + i;
-    }
-
-
     public bool IsZero {
         get { return this.Value == 0; }
     }
 
     public bool IsOne {
         get { return this.Value == 1 || this.Modulus == 1; }
-    }
-
-
-    public ModInt PlusOne() {
-        return this + 1;
     }
 }
