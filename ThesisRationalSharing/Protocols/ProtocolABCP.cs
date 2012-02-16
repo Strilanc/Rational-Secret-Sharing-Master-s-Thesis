@@ -49,7 +49,7 @@ namespace ThesisRationalSharing.Protocols {
             var r = new F[this.n];
             r[0] = field.One;
             for (int i = 1; i < n; i++)
-                r[i] = field.Plus(r[i - 1], field.One);
+                r[i] = field.Add(r[i - 1], field.One);
             return r;
         }
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
@@ -65,7 +65,7 @@ namespace ThesisRationalSharing.Protocols {
 
             var S = indexes.MapTo(i => ShamirSecretSharing.CreateShares(field, secret, t, n, rng).KeyBy(e => e.X));
 
-            var Y = indexes.MapTo(i => indexes.ToDictionary(j => j, j => field.Minus(S[i][j].Y, vrfs.Generate(G[j], r[i] + (field.ToInt(j) - r[i]).ProperMod(n)).Value)));
+            var Y = indexes.MapTo(i => indexes.ToDictionary(j => j, j => field.Subtract(S[i][j].Y, vrfs.Generate(G[j], r[i] + (field.ToInt(j) - r[i]).ProperMod(n)).Value)));
 
             return indexes.Select(i => new Share(i, c, V, Y[i], G[i])).ToArray();
         }
@@ -83,7 +83,7 @@ namespace ThesisRationalSharing.Protocols {
                     var sender = availableShares.SingleOrDefault(e => field.ToInt(e.i).ProperMod(n) == r.ProperMod(n));
                     if (sender == null) continue;
                     var m = vrfs.Generate(sender.G, r);
-                    Q.Enqueue(new Point<F>(field, sender.i, field.Plus(m.Value, cx.Y[sender.i])));
+                    Q.Enqueue(new Point<F>(field, sender.i, field.Add(m.Value, cx.Y[sender.i])));
                     if (Q.Count > n) Q.Dequeue();
                     var p = Polynomial<F>.FromInterpolation(field, Q);
                     var s = p.EvaluateAt(field.Zero);
@@ -170,7 +170,7 @@ namespace ThesisRationalSharing.Protocols {
                     return;
                 }
                 if (cooperatorIndexes.Count < scheme.t) return;
-                receivedShares.Enqueue(new Point<F>(scheme.field, senderId, scheme.field.Plus(message.Value, share.Y[senderId])));
+                receivedShares.Enqueue(new Point<F>(scheme.field, senderId, scheme.field.Add(message.Value, share.Y[senderId])));
                 if (coalitionShares != null) SimulateCoalition(round);
                 if (receivedShares.Count > scheme.t) receivedShares.Dequeue();                
                 var s = Polynomial<F>.FromInterpolation(scheme.field, receivedShares).EvaluateAt(scheme.field.Zero);
@@ -184,7 +184,7 @@ namespace ThesisRationalSharing.Protocols {
                         q.Dequeue();
                     var shr = coalitionShares.SingleOrDefault(e => scheme.field.ToInt(e.i).ProperMod(scheme.n) == simRound.ProperMod(scheme.n));
                     if (shr == null) continue;
-                    q.Enqueue(new Point<F>(scheme.field, shr.i, scheme.field.Plus(scheme.vrfs.Generate(shr.G, simRound).Value, share.Y[shr.i])));
+                    q.Enqueue(new Point<F>(scheme.field, shr.i, scheme.field.Add(scheme.vrfs.Generate(shr.G, simRound).Value, share.Y[shr.i])));
                     if (q.Count > scheme.t) receivedShares.Dequeue();
                     var s = Polynomial<F>.FromInterpolation(scheme.field, q).EvaluateAt(scheme.field.Zero);
                     if (share.c.Matches(s)) coalitionSecretPointer[0] = Tuple.Create(s);

@@ -56,7 +56,7 @@ namespace ThesisRationalSharing.Protocols {
             var r = new F[TotalShareCount];
             r[0] = Field.One;
             for (int i = 1; i < TotalShareCount; i++)
-                r[i] = Field.Plus(r[i - 1], Field.One);
+                r[i] = Field.Add(r[i - 1], Field.One);
             return r;
         }
         private BigInteger ChooseDefinitiveRound(ISecureRandomNumberGenerator rng, BigInteger Lc) {
@@ -96,7 +96,7 @@ namespace ThesisRationalSharing.Protocols {
                 public F Share {
                     get {
                         var p = _signatures.First().Value;
-                        return Field.Minus(p.EvaluateAt(Field.One), p.EvaluateAt(Field.Zero));
+                        return Field.Subtract(p.EvaluateAt(Field.One), p.EvaluateAt(Field.Zero));
                     }
                 }
                 public Polynomial<F> GetMessageSignatureTo(F receiver) {
@@ -186,7 +186,7 @@ namespace ThesisRationalSharing.Protocols {
             var X = Enumerable.Range(0, omega + 1).Select(j => {
                 var vn = SI[(int)r - 1][j].ShareYFor(c);
                 var vp = SI[(int)r - 2][j].ShareYFor(c);
-                return Field.Minus(vn, vp);
+                return Field.Subtract(vn, vp);
             }).ToArray();
 
             return indexes.Select(i => {
@@ -208,7 +208,7 @@ namespace ThesisRationalSharing.Protocols {
                                 availableShares.Select(e => {
                                     F y;
                                     if (e == sr && r > e.SignedMessages.Length)
-                                        y = Field.Plus(e.ShortMessage[oi], e.SignedMessages.Last()[oi].Share);
+                                        y = Field.Add(e.ShortMessage[oi], e.SignedMessages.Last()[oi].Share);
                                     else
                                         y = e.SignedMessages[r - 1][oi].Share;
                                     return new Point<F>(Field, e.i, y);
@@ -303,7 +303,7 @@ namespace ThesisRationalSharing.Protocols {
                 if (round > 1 && cooperatorIndexes.Count == scheme.ThresholdShareCount - 1) {
                     foreach (var c in lastCoops) {
                         extraShares.Add(new Dictionary<F, List<Point<F>>> {
-                            {c, lastMessages[c].Zip(share.ShortMessage, (p, n) => new Point<F>(scheme.Field, c, scheme.Field.Plus(p.Y, n))).ToList()}
+                            {c, lastMessages[c].Zip(share.ShortMessage, (p, n) => new Point<F>(scheme.Field, c, scheme.Field.Add(p.Y, n))).ToList()}
                         });
                     }
                 } else if (cooperatorIndexes.Count >= scheme.ThresholdShareCount) {

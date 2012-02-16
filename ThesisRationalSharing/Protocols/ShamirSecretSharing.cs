@@ -9,7 +9,7 @@ using System.Diagnostics;
 public class ShamirSecretSharing {
     public static IEnumerable<Point<F>> GenerateShares<F>(IFiniteField<F> field, F secret, int threshold, ISecureRandomNumberGenerator r) {
         var poly = r.GenerateNextPolynomialWithSpecifiedZero(field, threshold - 1, secret);
-        for (var i = field.One; !field.IsZero(i); i = field.Plus(i, field.One)) {
+        for (var i = field.One; !field.IsZero(i); i = field.Add(i, field.One)) {
             yield return Point<F>.FromPoly(poly, i);
         }
     }

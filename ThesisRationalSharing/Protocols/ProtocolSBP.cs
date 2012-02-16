@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Numerics;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace ThesisRationalSharing.Protocols {
     [DebuggerDisplay("{ToString()}")]
@@ -27,43 +28,54 @@ namespace ThesisRationalSharing.Protocols {
             }
         }
 
-        public readonly int t;
-        public readonly int n;
-        public readonly IFiniteField<F> field;
-        public readonly ICommitmentScheme<F> cs;
-        public readonly IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs;
-        public readonly Rational alpha;
-        public SBP(int t, int n, IFiniteField<F> field, ICommitmentScheme<F> cs, IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> vrfs, Rational alpha) {
-            this.t = t;
-            this.n = n;
-            this.field = field;
-            this.cs = cs;
-            this.vrfs = vrfs;
-            this.alpha = alpha;
+        public readonly int ThresholdShareCount;
+        public readonly int TotalShareCount;
+        public readonly IFiniteField<F> Field;
+        public readonly ICommitmentScheme<F> CommitmentScheme;
+        public readonly IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> VerifiableRandomFunctionScheme;
+        public readonly Rational MarginalDefinitiveRoundProbability;
+        public SBP(int thresholdShareCount, 
+                   int totalShareCount, 
+                   IFiniteField<F> field, 
+                   ICommitmentScheme<F> commitmentScheme, 
+                   IVerifiableRandomFunctionScheme<TVRFPub, TVRFPriv, TVRFProof, F> verifiableRandomFunctionScheme, 
+                   Rational marginalDefinitiveRoundProbability) {
+            Contract.Requires(field != null);
+            Contract.Requires(commitmentScheme != null);
+            Contract.Requires(verifiableRandomFunctionScheme != null);
+            Contract.Requires(thresholdShareCount >= 2);
+            Contract.Requires(totalShareCount >= thresholdShareCount);
+            Contract.Requires(totalShareCount < field.Size);
+            Contract.Requires(marginalDefinitiveRoundProbability > 0);
+            Contract.Requires(marginalDefinitiveRoundProbability < 1);
+            this.ThresholdShareCount = thresholdShareCount;
+            this.TotalShareCount = totalShareCount;
+            this.Field = field;
+            this.CommitmentScheme = commitmentScheme;
+            this.VerifiableRandomFunctionScheme = verifiableRandomFunctionScheme;
+            this.MarginalDefinitiveRoundProbability = marginalDefinitiveRoundProbability;
         }
 
         private F[] ShareIndexes() {
-            var r = new F[n];
-            r[0] = field.One;
-            for (int i = 1; i < n; i++)
-                r[i] = field.Plus(r[i - 1], field.One);
-            return r;
+            return Field.Range(Field.One, TotalShareCount).ToArray();
         }
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
             var indexes = ShareIndexes();
-            
-            var c = cs.Create(secret, rng);
 
-            var vg = indexes.MapTo(i => vrfs.CreatePublicPrivateKeyPair(rng));
+            //Commit to the secret 
+            var c = CommitmentScheme.Create(secret, rng);
+            //Create public (V) and private (G) key pairs
+            var vg = indexes.MapTo(i => VerifiableRandomFunctionScheme.CreatePublicPrivateKeyPair(rng));
             var V = indexes.MapTo(i => vg[i].Item1);
             var G = indexes.MapTo(i => vg[i].Item2);
+            //Choose the random definitive round
+            var r = rng.GenerateNextValueGeometric(chanceStop: MarginalDefinitiveRoundProbability, min: 1);
+            //Create shamir shares for the secret
+            var S = ShamirSecretSharing.CreateShares(Field, secret, ThresholdShareCount, TotalShareCount, rng).KeyBy(e => e.X);
+            //Compute the offsets between each player's share and vrf output on the definitive round
+            var Y = indexes.MapTo(i => Field.Subtract(S[i].Y, VerifiableRandomFunctionScheme.Generate(G[i], r).Value));
             
-            var r = rng.GenerateNextValueGeometric(chanceStop: alpha, min: 1);
-
-            var S = ShamirSecretSharing.CreateShares(field, secret, t, n, rng).KeyBy(e => e.X);
-
-            var Y = indexes.MapTo(i => field.Minus(S[i].Y, vrfs.Generate(G[i], r).Value));
-
+            //Return the list of shares composed of an index, a private key, the commitment, all public keys, and all offsets
             return indexes.Select(i => new Share(i, c, V, Y, G[i])).ToArray();
         }
 
@@ -71,13 +83,13 @@ namespace ThesisRationalSharing.Protocols {
         /// Combines a group of shares as if the players holding the shares were not adversarial.
         /// </summary>
         public F CoalitionCombine(Share[] availableShares) {
-            if (availableShares.Length < t) throw new ArgumentException("Not enough shares");
+            if (availableShares.Length < ThresholdShareCount) throw new ArgumentException("Not enough shares");
             var r = 1;
             var c = availableShares.FirstOrDefault().c;
             while (true) {
-                var M = availableShares.Select(e => vrfs.Generate(e.G, r)).ToArray();
-                var S = availableShares.Zip(M, (e, m) => new Point<F>(field, e.i, field.Plus(m.Value, e.Y[e.i]))).ToArray();
-                var s = ShamirSecretSharing.TryCombineShares(field, t, S);
+                var M = availableShares.Select(e => VerifiableRandomFunctionScheme.Generate(e.G, r)).ToArray();
+                var S = availableShares.Zip(M, (e, m) => new Point<F>(Field, e.i, Field.Add(m.Value, e.Y[e.i]))).ToArray();
+                var s = ShamirSecretSharing.TryCombineShares(Field, ThresholdShareCount, S);
                 if (s != null && c.Matches(s.Item1))
                     return s.Item1;
                 r += 1;
@@ -119,78 +131,78 @@ namespace ThesisRationalSharing.Protocols {
 
         [DebuggerDisplay("{ToString()}")]
         public class RationalPlayer : IPlayer {
-            public readonly Share share;
-            public readonly HashSet<F> cooperatorIndexes = new HashSet<F>();
-            public readonly SBP<F, TVRFPub, TVRFPriv, TVRFProof> scheme;
-            private Tuple<F> secret = null;
-            public F Index { get { return share.i; } }
-            public Tuple<F> RecoveredSecretValue { get { return secret; } }
+            public readonly SBP<F, TVRFPub, TVRFPriv, TVRFProof> Scheme;
+            public readonly Share Share;
+            private readonly ISet<F> cooperatorIndexes;
+            public Tuple<F> RecoveredSecretValue { get; private set; }
+            public F Index { get { return Share.i; } }
 
             public RationalPlayer(Share share, SBP<F, TVRFPub, TVRFPriv, TVRFProof> scheme) {
-                this.share = share;
-                this.scheme = scheme;
-                foreach (var fi in scheme.ShareIndexes())
-                    cooperatorIndexes.Add(fi);
+                this.Share = share;
+                this.Scheme = scheme;
+                this.cooperatorIndexes = new HashSet<F>(scheme.ShareIndexes());
             }
 
             public string DoneReason() {
-                if (secret != null) return "Have secret";
-                if (cooperatorIndexes.Count < scheme.t) return "Not enough cooperators";
+                if (RecoveredSecretValue != null) return "Have secret";
+                if (cooperatorIndexes.Count < Scheme.ThresholdShareCount) return "Not enough cooperators";
                 return null;
             }
             public ProofValue<TVRFProof, F> GetRoundMessage(int round) {
-                if (secret != null) return null;
-                if (cooperatorIndexes.Count < scheme.t) return null;
-                return scheme.vrfs.Generate(share.G, round);
+                if (RecoveredSecretValue != null) return null;
+                if (cooperatorIndexes.Count < Scheme.ThresholdShareCount) return null;
+                return Scheme.VerifiableRandomFunctionScheme.Generate(Share.G, round);
             }
             public IEnumerable<F> GetRoundMessageReceivers() {
                 return cooperatorIndexes;
             }
             public void UseRoundMessages(int round, Dictionary<F, ProofValue<TVRFProof, F>> messages) {
-                if (secret != null) return;
+                if (RecoveredSecretValue != null) return;
 
-                var S = new List<Point<F>>();
-                foreach (var m in messages) {
-                    if (!cooperatorIndexes.Contains(m.Key)) continue;
-                    if (!scheme.vrfs.Verify(share.V[m.Key], round, m.Value)) {
-                        cooperatorIndexes.Remove(m.Key);
-                        continue;
-                    }
-                    S.Add(new Point<F>(scheme.field, m.Key, scheme.field.Plus(m.Value.Value, share.Y[m.Key])));
-                }
+                //ignore players who sent no message
                 cooperatorIndexes.IntersectWith(messages.Keys);
-                if (cooperatorIndexes.Count < scheme.t) return;
+                //ignore players who sent fake messages
+                cooperatorIndexes.IntersectWith(cooperatorIndexes.Where(j => Scheme.VerifiableRandomFunctionScheme.Verify(Share.V[j], round, messages[j])));
 
-                var s = ShamirSecretSharing.TryCombineShares(scheme.field, scheme.t, S);
-                if (s != null && share.c.Matches(s.Item1)) secret = s;
+                //abort when there are not enough cooperators to reconstruct the secret
+                if (cooperatorIndexes.Count < Scheme.ThresholdShareCount) return;
+
+                var shares = cooperatorIndexes.Select(j => Scheme.Field.Point(j, Scheme.Field.Add(messages[j].Value, Share.Y[j]))).ToArray();
+                var potentialSecret = ShamirSecretSharing.TryCombineShares(Scheme.Field, Scheme.ThresholdShareCount, shares);
+                if (potentialSecret != null && Share.c.Matches(potentialSecret.Item1)) RecoveredSecretValue = potentialSecret;
             }
-            public override string ToString() { return "SBP Rational Player " + share.i; }
+            public override string ToString() { return "SBP Rational Player " + Share.i; }
         }
         [DebuggerDisplay("{ToString()}")]
         public class MaliciousPlayer : IPlayer {
-            public readonly Share share;
-            public readonly SBP<F, TVRFPub, TVRFPriv, TVRFProof> scheme;
-            public readonly ISecureRandomNumberGenerator randomMessageGenerator;
-            public readonly IEnumerable<F> playerIndexes;
-            public MaliciousPlayer(Share share, SBP<F, TVRFPub, TVRFPriv, TVRFProof> scheme, ISecureRandomNumberGenerator randomMessageGenerator) { 
-                this.share = share; 
-                this.playerIndexes = scheme.ShareIndexes();
-                this.randomMessageGenerator = randomMessageGenerator;
-                this.scheme = scheme;
+            public readonly Share Share;
+            public readonly SBP<F, TVRFPub, TVRFPriv, TVRFProof> Scheme;
+            private readonly ISecureRandomNumberGenerator _rng;
+            public MaliciousPlayer(Share share, SBP<F, TVRFPub, TVRFPriv, TVRFProof> scheme, ISecureRandomNumberGenerator randomMessageGenerator = null) { 
+                this.Share = share; 
+                this.Scheme = scheme;
+                this._rng = randomMessageGenerator;
             }
-            public F Index { get { return share.i; } }
-            public IEnumerable<F> GetRoundMessageReceivers() { return randomMessageGenerator == null ? new F[0] { } : playerIndexes; }
+            public F Index { get { return Share.i; } }
+            public IEnumerable<F> GetRoundMessageReceivers() { return Scheme.ShareIndexes(); }
             public Tuple<F> RecoveredSecretValue { get { return null; } }
             public string DoneReason() { return "Malicious"; }
             public ProofValue<TVRFProof, F> GetRoundMessage(int round) {
-                return randomMessageGenerator == null ? null : scheme.vrfs.RandomMaliciousValue(randomMessageGenerator); 
+                if (_rng == null) return null;
+                return Scheme.VerifiableRandomFunctionScheme.RandomMaliciousValue(_rng); 
             }
             public void UseRoundMessages(int round, Dictionary<F, ProofValue<TVRFProof, F>> messages) { }
-            public override string ToString() { return "SBP Malicious Player " + share.i; }
+            public override string ToString() { return "SBP Malicious Player " + Share.i; }
         }
 
         public override string ToString() {
-            return String.Format("SBP: n={0}, t={1}", n, t);
+            return String.Format("SBP: n={0}, t={1}, alpha={2}, field={3}, CS={4}, VRFS={5}", 
+                TotalShareCount, 
+                ThresholdShareCount, 
+                MarginalDefinitiveRoundProbability,
+                Field,
+                CommitmentScheme,
+                VerifiableRandomFunctionScheme);
         }
     }
 }

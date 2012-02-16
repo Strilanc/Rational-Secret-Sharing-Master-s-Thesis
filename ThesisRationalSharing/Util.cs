@@ -166,15 +166,6 @@ public static class Util {
         }
         return Polynomial<T>.FromCoefficients(field, coefficients);
     }
-    public static Polynomial<T> Sum<T>(this IEnumerable<Polynomial<T>> sequence, IField<T> field) {
-        return sequence.Aggregate(Polynomial<T>.Zero(field), (a, e) => a + e);
-    }
-    public static T Product<T>(this IEnumerable<T> sequence, IField<T> field) {
-        return sequence.Aggregate(field.One, (a, e) => field.Times(a, e));
-    }
-    public static Polynomial<T> Product<T>(this IEnumerable<Polynomial<T>> sequence, IField<T> field) {
-        return sequence.Aggregate(Polynomial<T>.One(field), (a, e) => a * e);
-    }
 
     ///<summary>Zips two sequences, padding the shorter sequence with default items until it matches the length of the longer sequence.</summary>
     [Pure]

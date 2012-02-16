@@ -10,8 +10,8 @@ public class ModIntField : IFiniteField<ModInt>, IFiniteField<BigInteger> {
         Contract.Requires(modulus > 0);
         this.Modulus = modulus;
     }
-    public ModInt Plus(ModInt value1, ModInt value2) { return value1 + value2; }
-    public ModInt Times(ModInt value1, ModInt value2) { return value1 * value2; }
+    public ModInt Add(ModInt value1, ModInt value2) { return value1 + value2; }
+    public ModInt Multiply(ModInt value1, ModInt value2) { return value1 * value2; }
     public ModInt AdditiveInverse(ModInt value) { return -value; }
     public ModInt MultiplicativeInverse(ModInt value) { return value.MultiplicativeInverse; }
     public string ListItemToString(ModInt value) { return value.Value.ToString(); }
@@ -23,12 +23,12 @@ public class ModIntField : IFiniteField<ModInt>, IFiniteField<BigInteger> {
     public override string ToString() { return "Integers mod " + Modulus; }
 
     public ModInt Random(ISecureRandomNumberGenerator rng) { return new ModInt(rng.GenerateNextValueMod(this.Modulus), this.Modulus); }
-    public BigInteger FieldSize { get { return Modulus; } }
+    public BigInteger Size { get { return Modulus; } }
     public BigInteger ToInt(ModInt value) { return value.Value; }
     public ModInt FromInt(BigInteger i) { return Zero + i; }
 
-    public BigInteger Plus(BigInteger value1, BigInteger value2) { return ModInt.From(value1 + value2, Modulus).Value; }
-    public BigInteger Times(BigInteger value1, BigInteger value2) { return ModInt.From(value1 * value2, Modulus).Value; }
+    public BigInteger Add(BigInteger value1, BigInteger value2) { return ModInt.From(value1 + value2, Modulus).Value; }
+    public BigInteger Multiply(BigInteger value1, BigInteger value2) { return ModInt.From(value1 * value2, Modulus).Value; }
     public BigInteger AdditiveInverse(BigInteger value) { return ModInt.From(-value, Modulus).Value; }
     public BigInteger MultiplicativeInverse(BigInteger value) { return new ModInt(value, Modulus).MultiplicativeInverse.Value; }
     public string ListItemToString(BigInteger value) { return value.ToString(); }

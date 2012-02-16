@@ -47,4 +47,7 @@ public class CommitSHA1Scheme : ICommitmentScheme<BigInteger>, ICommitmentScheme
     public ICommitment<ModInt> Create(ModInt value, ISecureRandomNumberGenerator rng) {
         return CS_SHA1.FromValue(value.Value);
     }
+    public override string ToString() {
+        return "SHA1";
+    }
 }

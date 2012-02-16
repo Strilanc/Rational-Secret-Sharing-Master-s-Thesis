@@ -69,8 +69,8 @@ public class Polynomial<T> : IEquatable<Polynomial<T>> {
         var total = Field.Zero;
         var factor = Field.One;
         foreach (var c in _coefficients) {
-            total = Field.Plus(total, Field.Times(c, factor));
-            factor = Field.Times(factor, x);
+            total = Field.Add(total, Field.Multiply(c, factor));
+            factor = Field.Multiply(factor, x);
         }
         return total;
     }
@@ -89,21 +89,28 @@ public class Polynomial<T> : IEquatable<Polynomial<T>> {
         if (value2.IsZero) return value1;
         return FromCoefficients(field,
             value1._coefficients.ZipPad(value2._coefficients, 
-                (v1, v2) => value1.Field.Plus(v1, v2), 
+                (v1, v2) => value1.Field.Add(v1, v2), 
                 field.Zero, 
                 field.Zero));
     }
     public static Polynomial<T> operator *(Polynomial<T> value, T factor) {
         Contract.Requires(value != null);
         if (value.IsZero) return value;
-        return FromCoefficients(value.Field, value._coefficients.Select(e => value.Field.Times(e, factor)));
+        return FromCoefficients(value.Field, value._coefficients.Select(e => value.Field.Multiply(e, factor)));
+    }
+    public static Polynomial<T> operator /(Polynomial<T> value, T factor) {
+        Contract.Requires(value != null);
+        Contract.Requires(!value.Field.IsZero(factor));
+        if (value.IsZero) return value;
+        return value * value.Field.MultiplicativeInverse(factor);
     }
     /// <summary>Returns the result of multiplying the polynomial by X to the shift'th power.</summary>
     public static Polynomial<T> operator <<(Polynomial<T> value, int shift) {
         Contract.Requires(value != null);
         Contract.Requires(shift >= 0);
+        if (shift == 0) return value;
         if (value.IsZero) return value;
-        return FromCoefficients(value.Field, Enumerable.Repeat(value.Field.Zero, shift).Concat(value._coefficients));
+        return new Polynomial<T>(value.Field, Enumerable.Repeat(value.Field.Zero, shift).Concat(value._coefficients).ToArray());
     }
 
     public static Polynomial<T> operator -(Polynomial<T> value1, Polynomial<T> value2) {
@@ -127,7 +134,7 @@ public class Polynomial<T> : IEquatable<Polynomial<T>> {
         var coefs = Enumerable.Repeat(value1.Field.Zero, Math.Max(value1.Degree + value2.Degree, 0) + 1).ToArray();
         for (int i = 0; i <= value1.Degree; i++) {
             for (int j = 0; j <= value2.Degree; j++) {
-                coefs[i + j] = field.Plus(coefs[i + j], field.Times(value1._coefficients[i], value2._coefficients[j]));
+                coefs[i + j] = field.Add(coefs[i + j], field.Multiply(value1._coefficients[i], value2._coefficients[j]));
             }
         }
 
@@ -155,15 +162,15 @@ public class Polynomial<T> : IEquatable<Polynomial<T>> {
     }
 
     private String RepresentCoefficient(T factor, int power) {
-        if (Field.IsZero(factor)) return "0";
+        if (Field.IsZero(factor)) return null;
         if (power == 0) return Field.ListItemToString(factor);
         String x = "x" + (power == 1 ? "" : "^" + power);
         if (Field.IsOne(factor)) return x;
         return Field.ListItemToString(factor) + x;
     }
     public override string ToString() {
-        if (this.IsZero) return "0";
-        return String.Join(" + ", _coefficients.Select((e, i) => RepresentCoefficient(e, i)).Where(e => e != "0").Reverse()) + Field.ListToStringSuffix;
+        if (this.IsZero) return Field.ListItemToString(Field.Zero) + Field.ListToStringSuffix;
+        return String.Join(" + ", _coefficients.Select((e, i) => RepresentCoefficient(e, i)).Where(e => e != null).Reverse()) + Field.ListToStringSuffix;
     }
 
     public static Polynomial<T> operator /(Polynomial<T> numerator, Polynomial<T> denominator) {
@@ -199,10 +206,10 @@ public class Polynomial<T> : IEquatable<Polynomial<T>> {
             var c = remainderCoefs[i];
             if (Field.IsZero(c)) continue;
             //inlined: quotient += c * divisorInverseFactor << degreeDif
-            quotientCoefs[i - divisor.Degree] = Field.Times(c, divisorInverseFactor);
+            quotientCoefs[i - divisor.Degree] = Field.Multiply(c, divisorInverseFactor);
             //inlined: remainder -= c * normalizedDivisor << degreeDif
             for (int j = 0; j <= divisor.Degree; j++) {
-                remainderCoefs[i - j] = Field.Minus(remainderCoefs[i - j], Field.Times(c, normalizedDivisor._coefficients[normalizedDivisor._coefficients.Length - j - 1]));
+                remainderCoefs[i - j] = Field.Subtract(remainderCoefs[i - j], Field.Multiply(c, normalizedDivisor._coefficients[normalizedDivisor._coefficients.Length - j - 1]));
             }
         }
         return Tuple.Create(FromCoefficients(Field, quotientCoefs), FromCoefficients(Field, remainderCoefs));
@@ -216,17 +223,13 @@ public class Polynomial<T> : IEquatable<Polynomial<T>> {
         Contract.Ensures(coords.All(e => Contract.Result<Polynomial<T>>().EvaluateAt(e.X).Equals(e.Y)));
 
         var pts = coords.ToArray();
-        if (pts.Length == 0) return Zero(field);
-        if (pts.Length == 1) return FromCoefficients(field, new T[] { coords.Single().Y });
-
-        var U = FromCoefficients(field, new[] { field.One });
+        var U = One(field);
         var X = U << 1;
-
-        var fullNumerator = pts.Select(e => X - U * e.X).Product(field);
-        return pts.Select(e => {
+        var fullNumerator = field.Product(pts.Select(e => X - U * e.X));
+        return field.Sum(pts.Select(e => {
             var numerator = fullNumerator / (X - U * e.X);
-            var denominator = pts.Except(new[] { e }).Select(f => field.Minus(e.X, f.X)).Product(field);
-            return e.Y * numerator * field.MultiplicativeInverse(denominator);
-        }).Sum(field);
+            var denominator = field.Product(pts.Except(new[] { e }).Select(f => field.Subtract(e.X, f.X)));
+            return e.Y * numerator / denominator;
+        }));
     }
 }

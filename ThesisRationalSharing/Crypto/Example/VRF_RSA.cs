@@ -24,34 +24,31 @@ public class VRF_RSA : IVerifiableRandomFunctionScheme<VRF_RSA.Key, VRF_RSA.Key,
 
     [DebuggerDisplay("{ToString()}")]
     public class Key {
-        public readonly BigInteger Modulus;
+        public readonly ModIntField Field;
         public readonly BigInteger Exponent;
-        public Key(BigInteger modulus, BigInteger exponent) {
-            this.Modulus = modulus;
+        public Key(ModIntField field, BigInteger exponent) {
+            this.Field = field;
             this.Exponent = exponent;
         }
         public BigInteger Process(BigInteger value) {
-            Contract.Requires(value < Modulus);
+            Contract.Requires(value < Field.Modulus);
             Contract.Requires(value >= 0);
-            return BigInteger.ModPow(value, Exponent, Modulus);
+            return BigInteger.ModPow(value, Exponent, Field.Modulus);
         }
         public override string ToString() {
-            return "Exponent = " + Exponent + ", Modulus = " + Modulus;
+            return String.Format("Exponent = {0}, Field = {1}", Exponent, Field);
         }
     }
 
     public Tuple<Key, Key> CreatePublicPrivateKeyPair(ISecureRandomNumberGenerator rng) {
-        BigInteger g = 3;
-        BigInteger m = 993;
-        BigInteger x = rng.GenerateNextValueMod(m - 1) + 1;
-        BigInteger h = BigInteger.ModPow(g, x, m);
-        var n = P * Q;
         var t = (P - 1) * (Q - 1);
         BigInteger e;
         do {
             e = rng.GenerateNextValueMod(t - 2) + 2;
         } while (BigInteger.GreatestCommonDivisor(e, t) != 1);
-        var d = new ModInt(e, t).MultiplicativeInverse.Value;
+        var d = new ModIntField(t).MultiplicativeInverse(e);
+        
+        var n = new ModIntField(P * Q);
         var pub = new Key(n, e);
         var priv = new Key(n, d);
         return Tuple.Create(pub, priv);
@@ -66,7 +63,7 @@ public class VRF_RSA : IVerifiableRandomFunctionScheme<VRF_RSA.Key, VRF_RSA.Key,
     }
 
     public override string ToString() {
-        return "VRF for F = Z mod " + VRFValueField.Modulus + " using RSA with P = " + P + ", Q = " + Q;
+        return String.Format("VRF_RSA(P*Q={0}*{1}, Field={2})", P, Q, VRFValueField);
     }
 
     public ProofValue<BigInteger, ModInt> RandomMaliciousValue(ISecureRandomNumberGenerator rng) {

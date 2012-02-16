@@ -42,7 +42,7 @@ namespace ThesisRationalSharing.Protocols {
             var r = new F[n];
             r[0] = field.One;
             for (int i = 1; i < n; i++)
-                r[i] = field.Plus(r[i - 1], field.One);
+                r[i] = field.Add(r[i - 1], field.One);
             return r;
         }
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
@@ -56,7 +56,7 @@ namespace ThesisRationalSharing.Protocols {
 
             var S = ShamirSecretSharing.CreateShares(field, secret, t - 1, n, rng).KeyBy(e => e.X);
 
-            var Y = indexes.MapTo(i => field.Minus(S[i].Y, vrfs.Generate(G[i], r).Value));
+            var Y = indexes.MapTo(i => field.Subtract(S[i].Y, vrfs.Generate(G[i], r).Value));
 
             return indexes.Select(i => new Share(i, V, Y, G[i])).ToArray();
         }
@@ -69,7 +69,7 @@ namespace ThesisRationalSharing.Protocols {
             var r = 1;
             while (true) {
                 var M = availableShares.Select(e => vrfs.Generate(e.G, r)).ToArray();
-                var S = availableShares.Zip(M, (e, m) => new Point<F>(field, e.i, field.Plus(m.Value, e.Y[e.i]))).ToArray();
+                var S = availableShares.Zip(M, (e, m) => new Point<F>(field, e.i, field.Add(m.Value, e.Y[e.i]))).ToArray();
                 var p = Polynomial<F>.FromInterpolation(field, S);
                 if (p.Degree <= t - 1) return p.EvaluateAt(field.Zero);
                 r += 1;
@@ -150,7 +150,7 @@ namespace ThesisRationalSharing.Protocols {
             public void StartRound(int round) {
                 receivedShares.Clear();
                 foreach (var s in coalitionShares.Concat(new[] { share })) {
-                    receivedShares[s.i] = new Point<F>(scheme.field, s.i, scheme.field.Plus(scheme.vrfs.Generate(s.G, round).Value, share.Y[s.i]));
+                    receivedShares[s.i] = new Point<F>(scheme.field, s.i, scheme.field.Add(scheme.vrfs.Generate(s.G, round).Value, share.Y[s.i]));
                 }
             }
             public IEnumerable<F> GetMessageReceivers() {
@@ -164,7 +164,7 @@ namespace ThesisRationalSharing.Protocols {
                     cooperatorIndexes.Remove(senderId);
                     return;
                 }
-                receivedShares[senderId] = new Point<F>(scheme.field, senderId, scheme.field.Plus(message.Value, share.Y[senderId]));
+                receivedShares[senderId] = new Point<F>(scheme.field, senderId, scheme.field.Add(message.Value, share.Y[senderId]));
                 if (receivedShares.Count != scheme.t) return;
                 
                 var s = Polynomial<F>.FromInterpolation(scheme.field, receivedShares.Values);
