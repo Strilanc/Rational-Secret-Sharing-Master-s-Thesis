@@ -16,35 +16,8 @@
 \defenceday{_______________________________XXXXXXXXXXXX______________________}
 \defencemonth{January}
 \defenceyear{2012}
-
-\newacronym{SBP}{SBP}{Synchronous Bounded Protocol}
-\newacronym{SUIP}{SUIP}{Synchronous Unbounded Inconspicuous Protocol}
-\newacronym{ABCP}{ABCP}{Asynchronous Bounced Conspicous Protocol}
-\newacronym{ABIP}{ABIP}{Asynchronous Bounced Inconspicous Protocol}
-\newacronym{VRF}{VRF}{Verifiable Random Function}
-\newacronym{VRFS}{VRFS}{Verifiable Random Function Scheme}
-\newacronym{CS}{CS}{Commitment Scheme}
-\newglossaryentry{Rational Player}{
-  name={Rational Player}
-  description={A player who wants to learn the secret but, secondarily, prevent others from learning the secret.}
-}
-\newglossaryentry{Malicious Player}{
-  name={Malicious Player}
-  description={A player who wants to prevent others from learning the secret.}
-}
-\newglossaryentry{Abstaining Player}{
-  name={Malicious Player}
-  description={A player who was given a share but is not participating in the protocol.}
-}
-\newglossaryentry{Cooperate}{
-  name={Cooperate}
-  description={A player cooperates when they follow the protocol.}
-}
-\newglossaryentry{Defect}{
-  name={Defect}
-  description={A player defects when they deviate from the protocol.}
-}
-\makeglossaries
+\convocation{______YYYYYY____}{_____ZZZZZZ______}
+\supervisor{Proessor Mike McAllister}
 
 \begin{document}
 \mcs
@@ -255,6 +228,7 @@ A similar protocol has been proposed by Fuchsbauer et al.~\cite{fuch10} but ther
     \STATE Create ordered lists $V$ and $G$ of $n$ public ($V$) and private ($G$) VRFS key pairs
     	$$V_i, G_i = VRFS.NewKeyPair()$$
     \STATE Choose the random definitive round $r$ from a geometric distribution with marginal probability $\alpha$
+    	$$r = Random(Geometric(\alpha))$$
     \STATE Create an ordered list $S$ of $n$ Shamir shares $S_i$ where $i > 0$ with threshold $t$ for the secret
     	$$S = CreateShamirShares(s, \mathbb{F}, n, t)$$
     	$$XOfPoint(S_i) = i$$
@@ -1200,6 +1174,10 @@ This thesis presented four protocols: a synchronous protocol for bounded opponen
 
 
 
+\bibliographystyle{plain}
+\bibliography{../../Refers/_refs}
+
+
 \appendix
 \chapter{Calculating Probability Distributions related to ABCP }
 \label{Appendix:ABCP:Probabilities}
@@ -1306,8 +1284,5 @@ lim_{\alpha \rightarrow^{+} 0} F^{*'}(r, e)
 \\&= \frac{1}{-(r-n+1) + (r+1) \times (1-0)^r}
 \\&= \frac{1}{n}
 \end{align*} 
-
-\bibliographystyle{plain}
-\bibliography{../../Refers/_refs}
 
 \end{document}

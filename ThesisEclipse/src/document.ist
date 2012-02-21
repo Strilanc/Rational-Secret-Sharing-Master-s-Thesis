@@ -1,29 +1,15 @@
-% makeindex style file created by the glossaries package
-% for document 'document' on 2012-2-13
-actual '?'
-encap '|'
-level '!'
-quote '"'
+% makeindex style file created by LaTeX for document "document" on 2012-2-21
 keyword "\\glossaryentry"
-preamble "\\glossarysection[\\glossarytoctitle]{\\glossarytitle}\\glossarypreamble\n\\begin{theglossary}\\glossaryheader\n"
-postamble "\%\n\\end{theglossary}\\glossarypostamble\n"
-group_skip "\\glsgroupskip\n"
-item_0 "\%\n"
-item_1 "\%\n"
-item_2 "\%\n"
-item_01 "\%\n"
-item_x1 "\\relax \\glsresetentrylist\n"
-item_12 "\%\n"
-item_x2 "\\relax \\glsresetentrylist\n"
-delim_0 "\{\\glossaryentrynumbers\{\\relax "
-delim_1 "\{\\glossaryentrynumbers\{\\relax "
-delim_2 "\{\\glossaryentrynumbers\{\\relax "
-delim_t "\}\}"
+preamble "\\begin{theglossary}"
+postamble "\n\\end{theglossary}\n"
+group_skip "\\gloskip "
+item_0 "\n\n\\gloitem "
+delim_0 "\n\\glodelim "
+page_compositor "-"
 delim_n "\\delimN "
 delim_r "\\delimR "
+delim_t "\\delimT "
 headings_flag 1
-heading_prefix "\\glsgroupheading\{"
-heading_suffix "\}\\relax \\glsresetentrylist "
-symhead_positive "glssymbols"
-numhead_positive "glsnumbers"
-page_compositor "."
+heading_prefix "\\glogroup"
+symhead_positive "Symbols"
+numhead_positive "Numbers"
