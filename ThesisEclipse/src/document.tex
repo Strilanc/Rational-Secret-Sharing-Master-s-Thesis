@@ -1,4 +1,4 @@
-\documentclass{dalcsthesis}
+\documentclass[12pt]{dalcsthesis}
 \usepackage{fullpage}
 \usepackage{textcomp}
 \usepackage{graphicx}
@@ -13,21 +13,25 @@
 \title{Rational Secret Sharing with and without Synchronous Broadcast, Conspicuous Secrets, Malicious Players and Unbounded Opponents}
 \author{Craig Gidney}
 \date{\today}
-\defenceday{_______________________________XXXXXXXXXXXX______________________}
-\defencemonth{January}
+\defenceday{22}
+\defencemonth{March}
 \defenceyear{2012}
-\convocation{______YYYYYY____}{_____ZZZZZZ______}
-\supervisor{Proessor Mike McAllister}
+\convocation{May}{2012}
 
 \begin{document}
 \mcs
-\maketitle
+\nolistoftables
+\frontmatter
 
 \begin{abstract}
-This thesis presents protocols, and bounds on the effectiveness of any protocol, for recombining secret shares in the presence of players who do not want others to learn the secret (rationality), may not want to learn the secret themselves (maliciousness), may be colluding, may have unbounded computational capacity, may be able to synchronize sends (asynchronous/synchronous broadcast), and/or may be able to recognize the secret independently (conspicuousness).
+In secret sharing we are asked to split a secret into several shares in such a way that a minimum number of shares is necessary and suffucient to reconstruct the secret. Rational secret sharing considers secret sharing in the context of adversarial players who want to learn the secret but, secondarily, want to prevent other players from learning the secret. 
 
-Four protocols are proposed and their security against rational and malicious players and coalitions is analyzed. Additionally, three results are presented that show protocols using only asynchronous broadcast are less secure than what can be achieved by protocols using synchronous broadcast. 
+We present protocols, and bounds on the effectiveness of any protocol, for recombining secret shares in the presence of players who do not want others to learn the secret (rationality), may not want to learn the secret themselves (maliciousness), may be colluding, may have unbounded computational capacity, may be able to synchronize sends (asynchronous/synchronous broadcast), and/or may be able to recognize the secret independently (conspicuousness).
+
+We propose four protocols and analyze their security against players and coalitions who are each rational or malicious. We also prove three results that show protocols using only asynchronous broadcast are less secure than what can be achieved by protocols using synchronous broadcast. 
 \end{abstract}
+
+\mainmatter
 
 \chapter{Introduction}
 
@@ -412,7 +416,7 @@ The sender can't undetectably forge messages because changing the message/slope 
 
 \begin{figure}
 \includegraphics[width=\textwidth]{../../Graphics/PointAndLineExample.png}
-\caption{Given a signed message ($m=2, b=2$) and a desired fake message ($m'=1$), each possible forged offset ($b'$) matches only one of the possible verifiers. Since the verifier is chosen at random, the chance of successful forging is $\frac{1}{|\mathbb{F}|}$.}
+\caption[Difficulty of forging a message]{Given a signed message ($m=2, b=2$) and a desired fake message ($m'=1$), each possible forged offset ($b'$) matches only one of the possible verifiers. Since the verifier is chosen at random, the chance of successful forging is $\frac{1}{|\mathbb{F}|}$.}
 \label{img:ForgingVerifiableMessageForUnbounded}
 \end{figure}
 
@@ -868,7 +872,7 @@ See Algorithms \ref{alg:ABCP:Dealer} and \ref{alg:ABCP:Player} and Figure \ref{i
 \end{algorithm}
 \begin{figure}
 \includegraphics[width=\textwidth]{../../Graphics/AsyncVerifiedSecret_n6t5d1.png}
-\caption{Representation of shares learned by players running ABCP with $n=6, t=5, \delta=1$. One player does not receive enough definitive shares and is sacrificed.}
+\caption[Shares learned by players running ABCP]{Representation of shares learned by players running ABCP with $n=6, t=5, \delta=1$. One player does not receive enough definitive shares and is sacrificed.}
 \label{img:ex:ABCP}
 \end{figure}
 

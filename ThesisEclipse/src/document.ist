@@ -1,4 +1,4 @@
-% makeindex style file created by LaTeX for document "document" on 2012-2-21
+% makeindex style file created by LaTeX for document "document" on 2012-2-24
 keyword "\\glossaryentry"
 preamble "\\begin{theglossary}"
 postamble "\n\\end{theglossary}\n"
