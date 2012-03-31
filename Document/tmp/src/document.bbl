@@ -1,0 +1,148 @@
+\begin{thebibliography}{10}
+
+\bibitem{abraham06}
+Ittai Abraham, Danny Dolev, Rica Gonen, and Joe Halpern.
+\newblock Distributed computing meets game theory: robust mechanisms for
+  rational secret sharing and multiparty computation.
+\newblock In {\em Proceedings of the twenty-fifth annual ACM Symposium on
+  Principles of Distributed Computing}, PODC '06, pages 53--62, New York, NY,
+  USA, 2006. ACM.
+
+\bibitem{asharov09}
+Gilad Asharov and Yehuda Lindell.
+\newblock Utility dependence in correct and fair rational secret sharing.
+\newblock {\em Journal of Cryptology}, 24:157--202, 2009.
+
+\bibitem{Damg02}
+Ivan Damgård and Jesper Nielsen.
+\newblock Perfect hiding and perfect binding universally composable commitment
+  schemes with constant expansion factor.
+\newblock In Moti Yung, editor, {\em Advances in Cryptology — CRYPTO 2002},
+  volume 2442 of {\em Lecture Notes in Computer Science}, pages 3--42. Springer
+  Berlin / Heidelberg, 2002.
+
+\bibitem{dis05}
+Yevgeniy Dodis and Aleksandr Yampolskiy.
+\newblock A verifiable random function with short proofs and keys.
+\newblock In Serge Vaudenay, editor, {\em Public Key Cryptography - PKC 2005},
+  volume 3386 of {\em Lecture Notes in Computer Science}, pages 416--431.
+  Springer Berlin / Heidelberg, 2005.
+
+\bibitem{fuch10}
+Georg Fuchsbauer, Jonathan Katz, and David Naccache.
+\newblock Efficient rational secret sharing in standard communication networks.
+\newblock In Daniele Micciancio, editor, {\em Theory of Cryptography}, volume
+  5978 of {\em Lecture Notes in Computer Science}, pages 419--436. Springer
+  Berlin / Heidelberg, 2010.
+
+\bibitem{gordon06}
+S.~Gordon and Jonathan Katz.
+\newblock Rational secret sharing, revisited.
+\newblock In Roberto De~Prisco and Moti Yung, editors, {\em Security and
+  Cryptography for Networks}, volume 4116 of {\em Lecture Notes in Computer
+  Science}, pages 229--241. Springer Berlin / Heidelberg, 2006.
+
+\bibitem{sha08}
+Carlos~M. Gutierrez, Patrick Gallagher, Acting~Director Foreword, and
+  Cita~Furlani Director.
+\newblock Secure hash standard, 2008.
+
+\bibitem{halpern04}
+Joseph Halpern and Vanessa Teague.
+\newblock Rational secret sharing and multiparty computation: extended
+  abstract.
+\newblock In {\em Proceedings of the thirty-sixth annual ACM Symposium on
+  Theory of Computing}, STOC '04, pages 623--632, New York, NY, USA, 2004. ACM.
+
+\bibitem{kol08-2}
+Gillat Kol and Moni Naor.
+\newblock Cryptography and game theory: Designing protocols for exchanging
+  information.
+\newblock In Ran Canetti, editor, {\em Theory of Cryptography}, volume 4948 of
+  {\em Lecture Notes in Computer Science}, pages 320--339. Springer Berlin /
+  Heidelberg, 2008.
+
+\bibitem{kol08}
+Gillat Kol and Moni Naor.
+\newblock Games for exchanging information.
+\newblock In {\em Proceedings of the 40th annual ACM Symposium on Theory of
+  Computing}, STOC '08, pages 423--432, New York, NY, USA, 2008. ACM.
+
+\bibitem{maleka08}
+Shaik Maleka, Amjed Shareef, and C.~Rangan.
+\newblock Rational secret sharing with repeated games.
+\newblock In Liqun Chen, Yi~Mu, and Willy Susilo, editors, {\em Information
+  Security Practice and Experience}, volume 4991 of {\em Lecture Notes in
+  Computer Science}, pages 334--346. Springer Berlin / Heidelberg, 2008.
+
+\bibitem{micali99}
+Silvio Micali, Salil Vadhan, and Michael Rabin.
+\newblock Verifiable random functions.
+\newblock In {\em Proceedings of the 40th Annual Symposium on Foundations of
+  Computer Science}, FOCS '99, pages 120--, Washington, DC, USA, 1999. IEEE
+  Computer Society.
+
+\bibitem{moses11}
+William~K. Moses and C.~Pandu~Rangan.
+\newblock Rational secret sharing with honest players over an asynchronous
+  channel.
+\newblock In David~C. Wyld, Michal Wozniak, Nabendu Chaki, Natarajan
+  Meghanathan, and Dhinaharan Nagamalai, editors, {\em Advances in Network
+  Security and Applications}, volume 196 of {\em Communications in Computer and
+  Information Science}, pages 414--426. Springer Berlin Heidelberg, 2011.
+
+\bibitem{naor91}
+Moni Naor.
+\newblock Bit commitment using pseudorandomness.
+\newblock {\em Journal of Cryptology}, 4:151--158, 1991.
+
+\bibitem{ong09}
+Shien Ong, David Parkes, Alon Rosen, and Salil Vadhan.
+\newblock Fairness with an honest minority and a rational majority.
+\newblock In Omer Reingold, editor, {\em Theory of Cryptography}, volume 5444
+  of {\em Lecture Notes in Computer Science}, pages 36--53. Springer Berlin /
+  Heidelberg, 2009.
+
+\bibitem{rsa78}
+R.~L. Rivest, A.~Shamir, and L.~Adleman.
+\newblock A method for obtaining digital signatures and public-key
+  cryptosystems.
+\newblock {\em Communications of the ACM}, 21:120--126, February 1978.
+
+\bibitem{rivest99}
+Ronald~L. Rivest.
+\newblock Unconditionally secure commitment and oblivious transfer schemes
+  using private channels and a trusted initializer.
+\newblock 1999.
+\newblock Available online:
+  http://people.csail.mit.edu/rivest/Rivest-commitment.pdf.
+
+\bibitem{MalekaS_08}
+Maleka S, Amjed Shareef, and C~Pandu~Rangan.
+\newblock {\em The Deterministic Protocol for Rational Secret Sharing}.
+\newblock 2008.
+
+\bibitem{shamir79}
+Adi Shamir.
+\newblock How to share a secret.
+\newblock {\em Communications of the ACM}, 22:612--613, November 1979.
+
+\bibitem{Shareef10}
+Amjed Shareef.
+\newblock Rational secret sharing without broadcast.
+\newblock Available online: http://eprint.iacr.org/2010/249, 2010.
+
+\bibitem{Yao82}
+Andrew~C. Yao.
+\newblock Protocols for secure computations.
+\newblock In {\em Proceedings of the 23rd Annual Symposium on Foundations of
+  Computer Science}, SFCS '82, pages 160--164, Washington, DC, USA, 1982. IEEE
+  Computer Society.
+
+\bibitem{yongquan10}
+Cai Yongquan, Luo Zhanhai, and Yang Yi.
+\newblock Publicly verifiable rational secret sharing.
+\newblock {\em International Journal of Advancements in Computing Technology},
+  3, October 2011.
+
+\end{thebibliography}

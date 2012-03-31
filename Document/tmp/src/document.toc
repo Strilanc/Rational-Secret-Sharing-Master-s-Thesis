@@ -1,0 +1,64 @@
+\baselineskip =0.7\baselineskip 
+\contentsline {chapter}{List of Figures}{vi}
+\contentsline {chapter}{Abstract}{vii}
+\contentsline {chapter}{\numberline {Chapter 1}Introduction}{1}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {1.1}The Landscape of Rational Secret Sharing}{1}
+\contentsline {subsection}{\numberline {1.1.1}Dealer / Player}{1}
+\contentsline {subsection}{\numberline {1.1.2}Rational Player}{2}
+\contentsline {subsection}{\numberline {1.1.3}Malicious Player}{2}
+\contentsline {subsection}{\numberline {1.1.4}Coalition}{3}
+\contentsline {subsection}{\numberline {1.1.5}Interactive Dealer}{3}
+\contentsline {subsection}{\numberline {1.1.6}Honest Dealer}{3}
+\contentsline {subsection}{\numberline {1.1.7}Synchronous and Asynchronous Broadcast}{4}
+\contentsline {subsection}{\numberline {1.1.8}Bounded and Unbounded Players}{5}
+\contentsline {subsection}{\numberline {1.1.9}Conspicuousness of the Secret}{5}
+\contentsline {subsection}{\numberline {1.1.10}Temptation}{6}
+\contentsline {subsection}{\numberline {1.1.11}Immunity}{7}
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {1.2}Document Map}{7}
+\contentsline {chapter}{\numberline {Chapter 2}Related Work}{8}
+\addvspace {10\p@ }
+\contentsline {chapter}{\numberline {Chapter 3}Synchronous Broadcast}{17}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {3.1}Synchronous Protocol for Bounded Opponents achieving Coalition Immunity}{17}
+\contentsline {subsection}{\numberline {3.1.1}Analysis}{18}
+\contentsline {subsection}{\numberline {3.1.2}Summary}{24}
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {3.2}Synchronous Protocol for Inconspicuous Secrets allowing Unbounded Opponents}{24}
+\contentsline {subsection}{\numberline {3.2.1}Creating Verifiable Messages for Unbounded Opponents}{25}
+\contentsline {subsection}{\numberline {3.2.2}Overview}{25}
+\contentsline {subsection}{\numberline {3.2.3}Analysis}{28}
+\contentsline {subsection}{\numberline {3.2.4}Choosing a definitive round with the proper distribution}{37}
+\contentsline {subsection}{\numberline {3.2.5}Choosing a Large Enough Number of Indicators $\omega $ to Prevent Malicious Use of the Short Message}{39}
+\contentsline {subsection}{\numberline {3.2.6}Observation and Conjecture about the Short Case's Consequences and Necessity}{40}
+\contentsline {subsection}{\numberline {3.2.7}Summary}{41}
+\contentsline {chapter}{\numberline {Chapter 4}Asynchronous Broadcast}{42}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {4.1}Limitations of all Asynchronous Rational Secret Sharing Protocols}{42}
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {4.2}Asynchronous Protocol for Conspicuous Secrets and Bounded Opponents}{45}
+\contentsline {subsection}{\numberline {4.2.1}Overview}{46}
+\contentsline {subsection}{\numberline {4.2.2}Analysis}{46}
+\contentsline {subsection}{\numberline {4.2.3}Summary}{53}
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {4.3}Asynchronous Protocol for Inconspicuous Secrets and Bounded Opponents}{54}
+\contentsline {subsection}{\numberline {4.3.1}Overview}{54}
+\contentsline {subsection}{\numberline {4.3.2}Analysis}{55}
+\contentsline {subsection}{\numberline {4.3.3}Summary}{62}
+\contentsline {chapter}{\numberline {Chapter 5}Future Work}{64}
+\addvspace {10\p@ }
+\contentsline {chapter}{\numberline {Chapter 6}Conclusion}{65}
+\addvspace {10\p@ }
+\contentsline {chapter}{Bibliography}{66}
+\contentsline {chapter}{\numberline {Appendix A}Calculating Probability Distributions related to ABCP }{68}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {A.1}Probability Distribution of First Definitive Round}{68}
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {A.2}Marginal Probability Distribution of First Definitive Round Never Exceeds $\alpha $}{68}
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {A.3}Marginal Probability of Equivalence Classes of First Definitive Round Limits to $\frac {1}{n}$ as $\alpha $ Approaches $0$}{69}
