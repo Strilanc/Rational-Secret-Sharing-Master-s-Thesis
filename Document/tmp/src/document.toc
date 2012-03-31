@@ -29,7 +29,7 @@
 \addvspace {10\p@ }
 \contentsline {section}{\numberline {3.2}Synchronous Protocol for Inconspicuous Secrets allowing Unbounded Opponents}{24}
 \contentsline {subsection}{\numberline {3.2.1}Creating Verifiable Messages for Unbounded Opponents}{25}
-\contentsline {subsection}{\numberline {3.2.2}Overview}{25}
+\contentsline {subsection}{\numberline {3.2.2}Overview}{27}
 \contentsline {subsection}{\numberline {3.2.3}Analysis}{28}
 \contentsline {subsection}{\numberline {3.2.4}Choosing a definitive round with the proper distribution}{37}
 \contentsline {subsection}{\numberline {3.2.5}Choosing a Large Enough Number of Indicators $\omega $ to Prevent Malicious Use of the Short Message}{39}

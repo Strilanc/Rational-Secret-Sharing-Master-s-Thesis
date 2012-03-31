@@ -14,7 +14,7 @@ Gilad Asharov and Yehuda Lindell.
 \newblock {\em Journal of Cryptology}, 24:157--202, 2009.
 
 \bibitem{Damg02}
-Ivan Damgård and Jesper Nielsen.
+Ivan Damg{\aa}rd and Jesper Nielsen.
 \newblock Perfect hiding and perfect binding universally composable commitment
   schemes with constant expansion factor.
 \newblock In Moti Yung, editor, {\em Advances in Cryptology — CRYPTO 2002},
