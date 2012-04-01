@@ -144,11 +144,10 @@ A protocol is ``coalition immune" when it is immune to malicious coalitions and 
 
 Chapter \ref{chapter:RelatedWork} covers work related to rational secret sharing. Chapter \ref{chapter:Synchronous} presents two protocols that assume synchronous broadcast: one for bounded opponents (SBP) and one for unbounded opponents (SUIP). Chapter \ref{chapter:Asynchronous} proves bounds on protocols assuming only asynchronous broadcast and presents two asynchronous protocols for bounded opponents: one for conspicuous secrets (ABCP) and one for inconspicuous secrets (ABIP). Chapter \ref{chapter:Future} covers potential future work within the scope of rational secret sharing. Chapter \ref{chapter:Conclusion} concludes the thesis. Appendix \ref{Appendix:ABCP:Probabilities} demonstrates how some of the probability distributions used in ABIP are derived.
 
-
-
-
 \chapter{Related Work}
 \label{chapter:RelatedWork}
+
+The mentioned rational secret sharing protocols are summarized briefly in Figure \ref{fig:Related}.
 
 In 1979 Adi Shamir published the paper ``How to Share a Secret"~\cite{shamir79}, detailing how to divide a secret into $n$ shares with a threshold $t$ such that any set of $t$ shares can easily reconstruct the secret but fewer than $t$ shares provided no information about the secret. In Shamir's scheme, shares are points on an up-to-$(t-1)$'th degree polynomial over a finite field $\mathbb{F}$. The secret is the polynomial's value at $x=0$. An up-to-$(t-1)$'th degree polynomial can be interpolated from any set of $t$ points. If only $t-1$ points are known then there is exactly one matching polynomial for each possible value at $x=0$ and so a $t$'th point can cause the secret to be any value. Thus an attacker with $t-1$ shares has no more information about the secret than an attacker with $0$ shares. The scheme is secure in the information theoretic sense.
 
@@ -200,6 +199,56 @@ Moses et al.'s protocol can be improved upon by compressing it to a single round
 
 Several cryptographic primitives are used by rational secret sharing protocols, including the protocols in this thesis. Verifiable random functions (VRFs)~\cite{dis05, micali99} allow a sequence of verifiable, but unpredictable, messages to be created from a small seed. Bit commitment~\cite{Damg02, naor91} allows an entity to ``commit" to a value, without revealing the value, by publishing a ``commitment" derived from the value. When the value is revealed, it can be compared against the commitment to verify that it is correct. In order for a bit commitment scheme to be secure it must be difficult to find values matching a given commitment and difficult to find values with the same commitment. Some commitment schemes are ``perfectly binding"~\cite{Damg02}, meaning each commitment matches exactly one value (no false positives). This thesis uses bit commitment to allow players to recognize the secret and verifiable random functions to allow the dealer to securely orchestrate when the secret is revealed. Examples will use unsalted SHA-1~\cite{sha08} for bit commitment and unpadded RSA~\cite{rsa78} for verifiable random functions but these basic primitives are used \emph{for their simplicity, not their security}.
 
+\begin{figure}
+\caption{Related rational secret sharing protocols}
+\label{fig:Related}
+\begin{tabular}{|l|l|l|l|}
+  \hline
+  Year & Authors 			& Mnemonic & Assumptions \\
+  \hline
+  \hline
+  2004 & Halpern		 	& Coins		& interactive, no 2-of-2, no coalitions,\\
+  	   & Teague 			& 			& no malicious, sync broadcast\\
+  \hline
+  2006 & Gordon				& PolyShare	& interactive, no coalitions,\\
+  	   & Katz 				& 			& no malicious, sync broadcast\\
+  \hline
+  2006 & Abraham		 	& PolySMPC  & no coalitions, no malicious,\\
+  	   & et al. 			& 			& sync broadcast \\
+  \hline
+  2008 & Kol				& ShortList & (no crypto) no coalitions,\\
+  	   & Naor 				& 			& no malicious, sync broadcast or 2-of-2\\
+  \hline
+  2008 & Kol 				&MeaningSMPC& no malicious, sync broadcast \\
+  	   & Naor 				&			& \\
+  \hline
+  2008 & Maleka S			& TRSS 		& interactive, no coalitions, \\
+  2008 & Shareef 			& 			& no malicious, payoffs, sync broadcast \\
+  \hline
+  2008 & Maleka 	 		&AsyncDealer& interactive\\
+  	   & et al. 			&			&\\
+  \hline
+  2009 & Ong		 		&HonestMinor& minority of honest players, \\
+  	   & et al. 			&			& no malicious, async broadcast \\
+  \hline
+  2009 & Asharov 			&LowerThreshold& (semi-malicious players) no 2-of-2,\\
+  	   & Lindell 			& 			& no $\lceil \frac{t}{2} \rceil$ coalitions, sync broadcast\\
+  \hline
+  2009 & Asharov 			& ListFake 	& (no crypto) no coalitions,\\
+  	   & Lindell 			& 			& sync broadcast or 2-of-2\\
+  \hline
+  2010 & Shareef 			& ListAsync & (no crypto) no coalitions,\\
+  	   & 	 	 			& 			& no malicious, async broadcast\\
+  \hline
+  2010 & Yongquan et al. 	&TRSS+Dealer& (verified dealer) interactive\\
+  \hline
+  2010 & Fuchsbauer et al. 	&VRF Blinding& no malicious, reliable transmission\\
+  \hline
+  2010 & Moses				&HonestAsync& no malicious, $k$ honest players,\\
+  	   & Rangan 			&			& no $k-1$ coalitions, async broadcast\\
+  \hline
+\end{tabular}
+\end{figure}
 
 
 

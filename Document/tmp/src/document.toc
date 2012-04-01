@@ -20,45 +20,45 @@
 \contentsline {section}{\numberline {1.2}Document Map}{7}
 \contentsline {chapter}{\numberline {Chapter 2}Related Work}{8}
 \addvspace {10\p@ }
-\contentsline {chapter}{\numberline {Chapter 3}Synchronous Broadcast}{17}
+\contentsline {chapter}{\numberline {Chapter 3}Synchronous Broadcast}{18}
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {section}{\numberline {3.1}Synchronous Protocol for Bounded Opponents achieving Coalition Immunity}{17}
-\contentsline {subsection}{\numberline {3.1.1}Analysis}{18}
-\contentsline {subsection}{\numberline {3.1.2}Summary}{24}
+\contentsline {section}{\numberline {3.1}Synchronous Protocol for Bounded Opponents achieving Coalition Immunity}{18}
+\contentsline {subsection}{\numberline {3.1.1}Analysis}{19}
+\contentsline {subsection}{\numberline {3.1.2}Summary}{25}
 \addvspace {10\p@ }
-\contentsline {section}{\numberline {3.2}Synchronous Protocol for Inconspicuous Secrets allowing Unbounded Opponents}{24}
-\contentsline {subsection}{\numberline {3.2.1}Creating Verifiable Messages for Unbounded Opponents}{25}
-\contentsline {subsection}{\numberline {3.2.2}Overview}{27}
-\contentsline {subsection}{\numberline {3.2.3}Analysis}{28}
-\contentsline {subsection}{\numberline {3.2.4}Choosing a definitive round with the proper distribution}{37}
-\contentsline {subsection}{\numberline {3.2.5}Choosing a Large Enough Number of Indicators $\omega $ to Prevent Malicious Use of the Short Message}{39}
-\contentsline {subsection}{\numberline {3.2.6}Observation and Conjecture about the Short Case's Consequences and Necessity}{40}
-\contentsline {subsection}{\numberline {3.2.7}Summary}{41}
-\contentsline {chapter}{\numberline {Chapter 4}Asynchronous Broadcast}{42}
-\addvspace {10\p@ }
-\addvspace {10\p@ }
-\contentsline {section}{\numberline {4.1}Limitations of all Asynchronous Rational Secret Sharing Protocols}{42}
-\addvspace {10\p@ }
-\contentsline {section}{\numberline {4.2}Asynchronous Protocol for Conspicuous Secrets and Bounded Opponents}{45}
-\contentsline {subsection}{\numberline {4.2.1}Overview}{46}
-\contentsline {subsection}{\numberline {4.2.2}Analysis}{46}
-\contentsline {subsection}{\numberline {4.2.3}Summary}{53}
-\addvspace {10\p@ }
-\contentsline {section}{\numberline {4.3}Asynchronous Protocol for Inconspicuous Secrets and Bounded Opponents}{54}
-\contentsline {subsection}{\numberline {4.3.1}Overview}{54}
-\contentsline {subsection}{\numberline {4.3.2}Analysis}{55}
-\contentsline {subsection}{\numberline {4.3.3}Summary}{62}
-\contentsline {chapter}{\numberline {Chapter 5}Future Work}{64}
-\addvspace {10\p@ }
-\contentsline {chapter}{\numberline {Chapter 6}Conclusion}{65}
-\addvspace {10\p@ }
-\contentsline {chapter}{Bibliography}{66}
-\contentsline {chapter}{\numberline {Appendix A}Calculating Probability Distributions related to ABCP }{68}
+\contentsline {section}{\numberline {3.2}Synchronous Protocol for Inconspicuous Secrets allowing Unbounded Opponents}{25}
+\contentsline {subsection}{\numberline {3.2.1}Creating Verifiable Messages for Unbounded Opponents}{26}
+\contentsline {subsection}{\numberline {3.2.2}Overview}{28}
+\contentsline {subsection}{\numberline {3.2.3}Analysis}{29}
+\contentsline {subsection}{\numberline {3.2.4}Choosing a definitive round with the proper distribution}{38}
+\contentsline {subsection}{\numberline {3.2.5}Choosing a Large Enough Number of Indicators $\omega $ to Prevent Malicious Use of the Short Message}{40}
+\contentsline {subsection}{\numberline {3.2.6}Observation and Conjecture about the Short Case's Consequences and Necessity}{41}
+\contentsline {subsection}{\numberline {3.2.7}Summary}{42}
+\contentsline {chapter}{\numberline {Chapter 4}Asynchronous Broadcast}{43}
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {section}{\numberline {A.1}Probability Distribution of First Definitive Round}{68}
+\contentsline {section}{\numberline {4.1}Limitations of all Asynchronous Rational Secret Sharing Protocols}{43}
 \addvspace {10\p@ }
-\contentsline {section}{\numberline {A.2}Marginal Probability Distribution of First Definitive Round Never Exceeds $\alpha $}{68}
+\contentsline {section}{\numberline {4.2}Asynchronous Protocol for Conspicuous Secrets and Bounded Opponents}{46}
+\contentsline {subsection}{\numberline {4.2.1}Overview}{47}
+\contentsline {subsection}{\numberline {4.2.2}Analysis}{47}
+\contentsline {subsection}{\numberline {4.2.3}Summary}{54}
 \addvspace {10\p@ }
-\contentsline {section}{\numberline {A.3}Marginal Probability of Equivalence Classes of First Definitive Round Limits to $\frac {1}{n}$ as $\alpha $ Approaches $0$}{69}
+\contentsline {section}{\numberline {4.3}Asynchronous Protocol for Inconspicuous Secrets and Bounded Opponents}{55}
+\contentsline {subsection}{\numberline {4.3.1}Overview}{55}
+\contentsline {subsection}{\numberline {4.3.2}Analysis}{56}
+\contentsline {subsection}{\numberline {4.3.3}Summary}{63}
+\contentsline {chapter}{\numberline {Chapter 5}Future Work}{65}
+\addvspace {10\p@ }
+\contentsline {chapter}{\numberline {Chapter 6}Conclusion}{66}
+\addvspace {10\p@ }
+\contentsline {chapter}{Bibliography}{67}
+\contentsline {chapter}{\numberline {Appendix A}Calculating Probability Distributions related to ABCP }{69}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {A.1}Probability Distribution of First Definitive Round}{69}
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {A.2}Marginal Probability Distribution of First Definitive Round Never Exceeds $\alpha $}{69}
+\addvspace {10\p@ }
+\contentsline {section}{\numberline {A.3}Marginal Probability of Equivalence Classes of First Definitive Round Limits to $\frac {1}{n}$ as $\alpha $ Approaches $0$}{70}
