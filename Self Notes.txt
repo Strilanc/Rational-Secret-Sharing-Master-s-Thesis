@@ -1,0 +1,21 @@
+Errata:
+3.1.0
+	Incorrectly asserts Fuchsbauer et al. extend their protocol to the async case without modification.
+	Fix by changing to "The way they extend to async breaks in the presence of malicious players."
+
+Figure 3.3:
+	Resulting shares table desynced from other content
+
+Lemma 4:
+	Actually shows constant temptation before short case
+	Later lemma contradicts this over-assertion!
+	Cooperating is an equilibrium except on the short round and except for the short player on the round before the short round when t=2
+	
+3.2.5:
+	The bad case probability can be larger than 1
+	It's actually an upper bound, not an exact solution
+	
+Lemma 36: But since EACH PLAYER has at least t-1 cooperators
+
+The TRSS+ABCP future work idea mentioned in the conclusion of ABCP doesn't guarantee 1 sacrifice
+

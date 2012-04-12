@@ -1,0 +1,234 @@
+* Chapter 1: Intro
+** Page 1
+
+   Second paragraph: In the presence of coalitions of players
+                                     ^^
+
+   Section 1.1: defined in this thesis.
+                        ^^
+
+** Page 2 (**)
+
+   I think paragraphs 1 and 2 do not make the point strongly enough:
+   paragraph 2 considers the scenario where it is *assumed* the players
+   cooperate, while paragraph 1 talks about essentially *enforcing* that they
+   cooperate because not doing so would not be in their interest.
+   This is somewhat related to truthful mechanisms.
+
+** Page 3 (*)
+
+   Honest dealer: Returning to your bank analogy, do you think the assumption of
+   an honest dealer is justified? ;)
+
+** Page 4 (*****)
+
+   I don't understand the second bullet on how to detect invalid shares.  Can
+   you please elaborate.  What's the purpose of checking the entropy?  What are
+   "shares matching the commitments"?
+
+   Section 1.1.7, 1st paragraph: you may want to make a point that broadcast
+   is the only viable option, as otherwise coalitions become too powerful.
+
+** Page 5 (****)
+
+   Can you explain what a "bit commitment" is and how it helps to make an
+   inconspicuous secret conspicuous?
+
+** Page 6
+
+   2nd paragraph: relative to a player
+                              ^
+
+   Once a secret sharing protocol starts, the secret
+                                        ^
+   (Otherwise it sounds like the protocol starts the secret.)
+
+* Chapter 2: Related work
+
+  It would be very helpful to include a table that summarizes the most important
+  characteristics of the different protocols discussed in this section.
+  Otherwise the reader cannot keep track of the properties or combinations of
+  properties that have been achieved by previous protocols and thus cannot
+  appreciate the contribution of your thesis.
+
+** Page 8
+
+   Line 3: provided no information -> provide no information
+
+   Middle of page: "If ..., then ..." requires a comma before "then"
+
+   Bottom of page: Your argument here seems to assume that there are only three
+   players.  You don't state this anywhere, though.
+
+** Page 9
+
+   Why will the other players stop participating if they don't receive anything?
+   Follow-up: So essentially this protocol is only probabilistically bounded
+   because if all flips come up tails, everybody stops participating and the
+   protocol breaks down.
+
+   Second paragraph: Any constraints on F and G here.  Are they fields?  Does
+   G \ F mean set difference or something else?
+
+   In both the Halpern/Teague and Gordon/Katz protocols, it seems that the
+   goal is that everybody learns the secret.
+   Where does the choice of t come into play?
+
+** Page 10 (*****)
+
+   Line 2: "Players send the next entry in their list." What's a player's list?
+   You said the dealer generates the list.  I also do not understand the
+   following description of the protocol at all.  What's a "short player"?
+
+   Second paragraph, "If, then"
+                        ^
+
+   The Shareef paper (2nd last paragraph): Can you elaborate a little how this
+   protocol is not trivially susceptible to coalitions and other misbehaviour?
+   By sending different information to different players, things can get
+   extremely biased.
+
+   Last paragraph "Noar" -> "Naor" (twice and then several times on page 11.
+   Essentially, do a search and replace on "Noar" on the entire document.)
+
+** Page 11
+
+   2nd paragraph: What's a "commitment to a seed"?
+
+   "If, then"
+
+   2nd paragraph: Where is the private key in this scheme?  The players have
+   shares of the seed, shares of the secret, and a public key.
+
+   Line -5: not broadcasting
+                         ^^^
+
+** Page 14 (***)
+
+   What does "eps-resilient" mean?
+
+** Page 15
+
+   "If, then"
+
+* Chapter 3: Synchronous Broadcast
+** Page 17
+
+   Line 2 of Sec 3.1: SPB -> SBP
+
+** Page 18
+
+   Is O(lgn) meant to mean O(\lg n)?
+
+   "If, then"
+
+** Page 21
+
+   I find the example on this page terribly confusing, even though I feel I
+   understand the algorithm itself reasonably well.
+
+** Page 28
+
+   "If, then" (several times)
+
+** Page 29
+
+   indicator share
+          ^^
+
+** Page 32
+
+   You should make the paragraph following Lemma 4 a proof of Lemma 4.
+   Otherwise the reader thinks Lemma 4 is given without proof.
+
+** Page 33 (***)
+
+   I'm missing something in the proof of Lemma 5.  We have the probability alpha
+   that the current round is the definitive round and the probability gamma that
+   the current round is the last round of the short player.  So how does this
+   give a probability of gamma/alpha for the short case?
+
+   Lemma 7: What does it mean for the short player to be present?
+
+** Page 35
+
+   "If, then" (Last time I comment on this.  There are several subsequent pages
+   where this should also be fixed.)
+
+   In Lemma 13, isn't the bound on the maximum temptation true also for larger
+   coalitions?  Aah, I see.  Lemma 14 covers this case.  You may want to say
+   before Lemma 13 that Lemmas 13 and 14 cover these separate cases.
+
+** Page 39 (***)
+
+   What do you mean by unbounded players being able to compute the bad cases?
+
+   1/p for a probability is a really bad choice because "p = probability".
+
+   Bottom: |F| should be |\mathbb{F}|.
+
+   Another typographic comment: All logs in your thesis should be "\lg" or
+   "\log" (and you should be consistent about using one or the other to denote
+   log-base-2).  This introduces the correct spacing and typesets the log in
+   roman font, as it should be.
+
+** Page 40 (****)
+
+   I buy your argument that you need unbounded entropy to guard against
+   unbounded opponents.  However, why is a short round necessary if all entropy
+   comes from the dealer?  Do you assume the dealer is non-interacting here too?
+   (In that case, I buy your argument.  Otherwise it seems like the dealer can
+   simply distribute new messages for the next round on the fly.)
+
+* Chapter 4: Asynchronous Broadcast
+** Page 42 (**)
+
+   How do receivers detect that no message was sent?  Do you assume a time-out
+   or is there a more reliable way to check that no message was sent?
+
+** Page 43 (**)
+
+   "More than a strict majority of players can learn the secret."  Do you mean
+   more players than what would constitute a strict majority or do you mean
+   "more cases" than when a strict majority learns the secret, i.e., a number of
+   players not constituting a strict majority could also learn the secret?
+
+   Alright, I get what this says now, but the phrase "more than a strict
+   majority" is really weird.  More than the smallest number that is a strict
+   majority is still a strict majority.  So you cannot have more players than a
+   strict majority.
+
+** Page 44/45 (****)
+
+   Can you explain to me what it means to be immune to a rational coalition.
+   You defined this to mean that the players in the coalition cooperate until
+   they learn the secret.  Your proof does not say anything about the coalition
+   defecting before they learn the secret.  So I'm confused.  Overall, something
+   is off with the logic in this proof.  I'm simply not following.
+
+   How can m(p,r) not decrease in a given round?  Essentially this means the
+   player does not learn anything in the given round.  Can you explain?
+
+** Page 49 (****)
+
+   I'm missing something trivial here, I guess.  How does the protocol achieve
+   the offsets of when players start to receive definitive shares?
+
+** Page 51
+
+   Spacing problem before "(mod n)".  Did you use "\bmod"?  Try "\mod".
+
+** Page 53
+
+   It's unclear what the different paragraphs in the proof of Lemma 27 argue.
+   It seems like the first paragraph argues that it is possible to decrease the
+   count by 2 and that the other two paragraphs argue that the count cannot
+   decrease by more than two.  This should be made clearer.
+
+* Bibliography
+
+  Reference [3] needs to be fixed: Ivan Damgård
+* Appendix A.1 (****)
+
+   What does the upward arrow notation mean?
+
