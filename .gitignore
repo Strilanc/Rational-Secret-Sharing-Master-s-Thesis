@@ -13,3 +13,5 @@ TestResults/*
 *.crunchsolution.cache
 *.vbproj.user
 *.pdf
+*/tmp/*
+*/out/*
