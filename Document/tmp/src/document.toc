@@ -1,6 +1,7 @@
 \baselineskip =0.7\baselineskip 
 \contentsline {chapter}{List of Figures}{vi}
 \contentsline {chapter}{Abstract}{vii}
+\contentsline {chapter}{List of Abbrevations and Symbols Used \hbox to\@tempdima {\hfil }}{viii}
 \contentsline {chapter}{\numberline {Chapter 1}Introduction}{1}
 \addvspace {10\p@ }
 \addvspace {10\p@ }

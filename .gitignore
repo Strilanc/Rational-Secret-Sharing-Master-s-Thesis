@@ -1,0 +1,15 @@
+Strilbrary/bin/*
+Strilbrary/obj/*
+StrilbraryUnchecked/bin/*
+StrilbraryUnchecked/obj/*
+*.pfx
+*.snk
+Testing/bin/*
+Testing/obj/*
+TestResults/*
+*.testsettings
+*.suo
+*.ncrunchsolution.user
+*.crunchsolution.cache
+*.vbproj.user
+*.pdf
