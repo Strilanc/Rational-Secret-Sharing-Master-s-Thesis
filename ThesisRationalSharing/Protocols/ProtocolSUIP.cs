@@ -170,18 +170,22 @@ namespace ThesisRationalSharing.Protocols {
         public Share[] Deal(F secret, ISecureRandomNumberGenerator rng) {
             var indexes = ShareIndices();
 
-            var L = indexes.Zip(indexes.Select(i => rng.GenerateNextValueGeometric(chanceStop: gamma, min: 1)).PartialSums().Select(i => i + beta + 1).Shuffle(rng), (e1,e2) => Tuple.Create(e1, e2)).ToDictionary(e => e.Item1, e => e.Item2);
+            var L = indexes.Zip(indexes.Select(i => rng.GenerateNextValueGeometric(chanceStop: gamma, min: 1))
+                                       .PartialSums()
+                                       .Select(i => i + beta + 1)
+                                       .Shuffle(rng), 
+                                (e1,e2) => Tuple.Create(e1, e2)).ToDictionary(e => e.Item1, e => e.Item2);
             var Ln = L.Values.Max() + 1;
             var c = L.Keys.MinBy(i => L[i]);
             var Lc = L[c];
             var r = ChooseDefinitiveRound(rng, Lc);
 
             var SI = Enumerable.Range(1, (int)Ln + 1).Select(i =>
-                        Enumerable.Range(0, omega + 1).Select(j => {
-                            var m = i == r ? (j == 0 ? secret : Field.Zero) : Field.Random(rng);
-                            return AuthenticatedMessageData.FromValue(this, m, rng);
-                        }).ToArray()
-                    ).ToArray();
+                         Enumerable.Range(0, omega + 1).Select(j => {
+                             var m = i == r ? (j == 0 ? secret : Field.Zero) : Field.Random(rng);
+                             return AuthenticatedMessageData.FromValue(this, m, rng);
+                         }).ToArray()
+                     ).ToArray();
 
             var X = Enumerable.Range(0, omega + 1).Select(j => {
                 var vn = SI[(int)r - 1][j].ShareYFor(c);
