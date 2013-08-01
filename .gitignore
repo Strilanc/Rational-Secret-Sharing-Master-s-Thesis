@@ -1,7 +1,3 @@
-Strilbrary/bin/*
-Strilbrary/obj/*
-StrilbraryUnchecked/bin/*
-StrilbraryUnchecked/obj/*
 *.pfx
 *.snk
 Testing/bin/*
@@ -15,3 +11,11 @@ TestResults/*
 *.pdf
 */tmp/*
 */out/*
+*/bin/*
+*/obj/*
+*.crunchsolution.cache
+*.ncrunchsolution
+*.ncrunchproject
+*.user
+_ReSharper.*
+*.vsmdi
