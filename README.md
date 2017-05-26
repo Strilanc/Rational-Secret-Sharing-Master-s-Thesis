@@ -1,5 +1,7 @@
 # Rational Secret Sharing
 
+*(with and without synchronous boardcast, conspicuous secrets, malicious players and unbounded opponents)*
+
 My master's thesis on rational secret sharing.
 Includes the thesis itself (source latex + output pdf), an implementation of the protocols described (C#), and the slides from my defense.
 
